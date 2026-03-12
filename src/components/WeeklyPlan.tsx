@@ -15,7 +15,7 @@ import {
   type DayPlan,
   type MealType,
   type Recipe,
-} from "@/lib/github";
+} from "@/lib/data";
 
 const MEAL_TYPES: { key: MealType; label: string }[] = [
   { key: "breakfast", label: "Breakfast" },
@@ -37,7 +37,11 @@ function toDateKey(d: Date): string {
 }
 
 function formatDay(d: Date): string {
-  return d.toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short" });
+  return d.toLocaleDateString("en-GB", {
+    weekday: "short",
+    day: "numeric",
+    month: "short",
+  });
 }
 
 interface WeeklyPlanProps {
@@ -82,7 +86,11 @@ export function WeeklyPlan({ refreshTrigger }: WeeklyPlanProps) {
     };
   }, [weekStart, refreshTrigger]);
 
-  const addRecipeToSlot = async (dateKey: string, mealType: MealType, recipeId: string) => {
+  const addRecipeToSlot = async (
+    dateKey: string,
+    mealType: MealType,
+    recipeId: string,
+  ) => {
     const current = plan[dateKey]?.[mealType] ?? [];
     if (current.includes(recipeId)) return;
     setSaving(`${dateKey}-${mealType}`);
@@ -100,7 +108,11 @@ export function WeeklyPlan({ refreshTrigger }: WeeklyPlanProps) {
     }
   };
 
-  const removeRecipeFromSlot = async (dateKey: string, mealType: MealType, recipeId: string) => {
+  const removeRecipeFromSlot = async (
+    dateKey: string,
+    mealType: MealType,
+    recipeId: string,
+  ) => {
     const current = plan[dateKey]?.[mealType] ?? [];
     const next = current.filter((id) => id !== recipeId);
     setSaving(`${dateKey}-${mealType}`);
@@ -118,7 +130,10 @@ export function WeeklyPlan({ refreshTrigger }: WeeklyPlanProps) {
     }
   };
 
-  const recipeById = useMemo(() => Object.fromEntries(recipes.map((r) => [r.id, r])), [recipes]);
+  const recipeById = useMemo(
+    () => Object.fromEntries(recipes.map((r) => [r.id, r])),
+    [recipes],
+  );
 
   const goPrev = () => {
     const d = new Date(weekStart);
@@ -160,7 +175,10 @@ export function WeeklyPlan({ refreshTrigger }: WeeklyPlanProps) {
           <div className="grid grid-cols-[8rem_1fr_1fr_1fr] gap-0 bg-muted/50">
             <div className="p-2 text-sm font-medium border-b border-r">Day</div>
             {MEAL_TYPES.map(({ label }) => (
-              <div key={label} className="p-2 text-sm font-medium border-b border-r last:border-r-0">
+              <div
+                key={label}
+                className="p-2 text-sm font-medium border-b border-r last:border-r-0"
+              >
                 {label}
               </div>
             ))}
@@ -169,7 +187,10 @@ export function WeeklyPlan({ refreshTrigger }: WeeklyPlanProps) {
             const dateKey = toDateKey(d);
             const dayPlan = plan[dateKey] ?? {};
             return (
-              <div key={dateKey} className="grid grid-cols-[8rem_1fr_1fr_1fr] gap-0 border-b last:border-b-0">
+              <div
+                key={dateKey}
+                className="grid grid-cols-[8rem_1fr_1fr_1fr] gap-0 border-b last:border-b-0"
+              >
                 <div className="p-2 border-r text-sm font-medium">
                   {formatDay(d)}
                 </div>
@@ -177,19 +198,27 @@ export function WeeklyPlan({ refreshTrigger }: WeeklyPlanProps) {
                   const ids = dayPlan[key] ?? [];
                   const isSaving = saving === `${dateKey}-${key}`;
                   return (
-                    <div key={key} className="p-2 border-r last:border-r-0 flex flex-col min-w-0">
+                    <div
+                      key={key}
+                      className="p-2 border-r last:border-r-0 flex flex-col min-w-0"
+                    >
                       <ul className="text-sm space-y-0.5 mb-1">
                         {ids.map((id) => {
                           const r = recipeById[id];
                           return (
-                            <li key={id} className="flex items-center justify-between gap-1">
+                            <li
+                              key={id}
+                              className="flex items-center justify-between gap-1"
+                            >
                               <span className="truncate">{r?.name ?? id}</span>
                               <Button
                                 type="button"
                                 variant="ghost"
                                 size="sm"
                                 className="h-5 px-1 text-muted-foreground hover:text-destructive shrink-0"
-                                onClick={() => removeRecipeFromSlot(dateKey, key, id)}
+                                onClick={() =>
+                                  removeRecipeFromSlot(dateKey, key, id)
+                                }
                                 disabled={isSaving}
                               >
                                 ×
@@ -202,7 +231,8 @@ export function WeeklyPlan({ refreshTrigger }: WeeklyPlanProps) {
                         key={`${dateKey}-${key}-${(dayPlan[key] ?? []).length}`}
                         value="__add__"
                         onValueChange={(v) => {
-                          if (v && v !== "__add__") addRecipeToSlot(dateKey, key, v);
+                          if (v && v !== "__add__")
+                            addRecipeToSlot(dateKey, key, v);
                         }}
                         disabled={isSaving || recipes.length === 0}
                       >

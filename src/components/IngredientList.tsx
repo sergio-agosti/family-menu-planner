@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { getData, type Ingredient } from "@/lib/github";
+import { getData, type Ingredient } from "@/lib/data";
 import { getTescoSearchUrl, getGoogleSearchUrl } from "@/lib/utils";
 import { ExternalLink } from "lucide-react";
 
@@ -17,7 +17,11 @@ export function IngredientList({ refreshTrigger }: IngredientListProps) {
   useEffect(() => {
     getData()
       .then((data) => setIngredients(data.ingredients))
-      .catch((err) => setError(err instanceof Error ? err.message : "Failed to load ingredients"))
+      .catch((err) =>
+        setError(
+          err instanceof Error ? err.message : "Failed to load ingredients",
+        ),
+      )
       .finally(() => setIsLoading(false));
   }, [refreshTrigger]);
 
@@ -48,7 +52,9 @@ export function IngredientList({ refreshTrigger }: IngredientListProps) {
           <CardTitle>Ingredients</CardTitle>
         </CardHeader>
         <CardContent>
-          <p className="text-muted-foreground">No ingredients yet. Add one above.</p>
+          <p className="text-muted-foreground">
+            No ingredients yet. Add one above.
+          </p>
         </CardContent>
       </Card>
     );
@@ -62,7 +68,10 @@ export function IngredientList({ refreshTrigger }: IngredientListProps) {
       <CardContent>
         <ul className="space-y-2">
           {ingredients.map((ing) => (
-            <li key={ing.id} className="flex items-center justify-between gap-2 p-3 rounded-md border bg-card">
+            <li
+              key={ing.id}
+              className="flex items-center justify-between gap-2 p-3 rounded-md border bg-card"
+            >
               <span className="font-medium">{ing.name}</span>
               <div className="flex items-center gap-1">
                 <Button
@@ -71,7 +80,13 @@ export function IngredientList({ refreshTrigger }: IngredientListProps) {
                   size="sm"
                   className="h-8 px-2 text-muted-foreground"
                   title="Find on Tesco"
-                  onClick={() => window.open(getTescoSearchUrl(ing.name), "_blank", "noopener,noreferrer")}
+                  onClick={() =>
+                    window.open(
+                      getTescoSearchUrl(ing.name),
+                      "_blank",
+                      "noopener,noreferrer",
+                    )
+                  }
                 >
                   <ExternalLink className="size-3.5 mr-1" />
                   Find link
@@ -82,7 +97,13 @@ export function IngredientList({ refreshTrigger }: IngredientListProps) {
                   size="sm"
                   className="h-8 px-2 text-muted-foreground"
                   title="Search Google for Tesco"
-                  onClick={() => window.open(getGoogleSearchUrl(ing.name), "_blank", "noopener,noreferrer")}
+                  onClick={() =>
+                    window.open(
+                      getGoogleSearchUrl(ing.name),
+                      "_blank",
+                      "noopener,noreferrer",
+                    )
+                  }
                 >
                   Google
                 </Button>

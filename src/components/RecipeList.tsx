@@ -1,16 +1,21 @@
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { getData, type Recipe } from "@/lib/github";
+import { getData, type Recipe } from "@/lib/data";
 
 interface RecipeListProps {
   refreshTrigger: number;
   onSelectRecipe: (id: string) => void;
 }
 
-export function RecipeList({ refreshTrigger, onSelectRecipe }: RecipeListProps) {
+export function RecipeList({
+  refreshTrigger,
+  onSelectRecipe,
+}: RecipeListProps) {
   const [recipes, setRecipes] = useState<Recipe[]>([]);
-  const [recipeIngredientCounts, setRecipeIngredientCounts] = useState<Record<string, number>>({});
+  const [recipeIngredientCounts, setRecipeIngredientCounts] = useState<
+    Record<string, number>
+  >({});
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
 
@@ -31,7 +36,9 @@ export function RecipeList({ refreshTrigger, onSelectRecipe }: RecipeListProps) 
       })
       .catch((err) => {
         if (!cancelled) {
-          setError(err instanceof Error ? err.message : "Failed to load recipes");
+          setError(
+            err instanceof Error ? err.message : "Failed to load recipes",
+          );
         }
       })
       .finally(() => {
@@ -69,7 +76,9 @@ export function RecipeList({ refreshTrigger, onSelectRecipe }: RecipeListProps) 
           <CardTitle>Recipes</CardTitle>
         </CardHeader>
         <CardContent>
-          <p className="text-muted-foreground">No recipes yet. Add your first recipe above!</p>
+          <p className="text-muted-foreground">
+            No recipes yet. Add your first recipe above!
+          </p>
         </CardContent>
       </Card>
     );

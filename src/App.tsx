@@ -31,13 +31,19 @@ function App() {
     <div className="min-h-screen bg-background">
       <div className="container mx-auto max-w-4xl py-8 px-4">
         <header className="mb-8">
-          <h1 className="text-4xl font-bold tracking-tight">Family Menu Planner</h1>
+          <h1 className="text-4xl font-bold tracking-tight">
+            Family Menu Planner
+          </h1>
           <p className="text-muted-foreground mt-2">
             Recipes, ingredients, and weekly planning
           </p>
         </header>
 
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
+        <Tabs
+          value={activeTab}
+          onValueChange={setActiveTab}
+          className="space-y-4"
+        >
           <TabsList className="grid w-full grid-cols-3">
             <TabsTrigger value="recipes">Recipes</TabsTrigger>
             <TabsTrigger value="ingredients">Ingredients</TabsTrigger>

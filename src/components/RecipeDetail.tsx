@@ -7,7 +7,7 @@ import {
   type Recipe,
   type Ingredient,
   type RecipeIngredient,
-} from "@/lib/github";
+} from "@/lib/data";
 import { RecipeIngredientRows } from "@/components/RecipeIngredientRows";
 
 interface RecipeDetailProps {
@@ -16,10 +16,16 @@ interface RecipeDetailProps {
   onUpdated: () => void;
 }
 
-export function RecipeDetail({ recipeId, onClose, onUpdated }: RecipeDetailProps) {
+export function RecipeDetail({
+  recipeId,
+  onClose,
+  onUpdated,
+}: RecipeDetailProps) {
   const [recipe, setRecipe] = useState<Recipe | null>(null);
   const [ingredients, setIngredients] = useState<Ingredient[]>([]);
-  const [recipeIngredients, setRecipeIngredientsState] = useState<RecipeIngredient[]>([]);
+  const [recipeIngredients, setRecipeIngredientsState] = useState<
+    RecipeIngredient[]
+  >([]);
   const [isEditing, setIsEditing] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -29,18 +35,24 @@ export function RecipeDetail({ recipeId, onClose, onUpdated }: RecipeDetailProps
       const r = data.recipes.find((x) => x.id === recipeId) ?? null;
       setRecipe(r);
       setIngredients(data.ingredients);
-      setRecipeIngredientsState(data.recipeIngredients.filter((ri) => ri.recipeId === recipeId));
+      setRecipeIngredientsState(
+        data.recipeIngredients.filter((ri) => ri.recipeId === recipeId),
+      );
       setIsLoading(false);
     });
   }, [recipeId]);
 
-  const handleSaveIngredients = async (items: { ingredientId: string; quantity: string }[]) => {
+  const handleSaveIngredients = async (
+    items: { ingredientId: string; quantity: string }[],
+  ) => {
     if (!recipeId) return;
     setSaving(true);
     try {
       await setRecipeIngredients(recipeId, items);
       const data = await getData();
-      setRecipeIngredientsState(data.recipeIngredients.filter((ri) => ri.recipeId === recipeId));
+      setRecipeIngredientsState(
+        data.recipeIngredients.filter((ri) => ri.recipeId === recipeId),
+      );
       setIsEditing(false);
       onUpdated();
     } finally {
@@ -66,11 +78,21 @@ export function RecipeDetail({ recipeId, onClose, onUpdated }: RecipeDetailProps
         <CardTitle>{recipe.name}</CardTitle>
         <div className="flex gap-2">
           {!isEditing ? (
-            <Button type="button" variant="outline" size="sm" onClick={() => setIsEditing(true)}>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => setIsEditing(true)}
+            >
               Edit ingredients
             </Button>
           ) : (
-            <Button type="button" variant="outline" size="sm" onClick={() => setIsEditing(false)}>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => setIsEditing(false)}
+            >
               Cancel
             </Button>
           )}
@@ -96,13 +118,18 @@ export function RecipeDetail({ recipeId, onClose, onUpdated }: RecipeDetailProps
           ) : (
             <ul className="space-y-1">
               {recipeIngredients.length === 0 ? (
-                <li className="text-muted-foreground text-sm">No ingredients yet.</li>
+                <li className="text-muted-foreground text-sm">
+                  No ingredients yet.
+                </li>
               ) : (
                 recipeIngredients.map((ri) => {
                   const ing = byId[ri.ingredientId];
                   const label = ing ? ing.name : "(unknown)";
                   return (
-                    <li key={`${ri.ingredientId}-${ri.quantity}`} className="flex gap-2 text-sm">
+                    <li
+                      key={`${ri.ingredientId}-${ri.quantity}`}
+                      className="flex gap-2 text-sm"
+                    >
                       <span>{ri.quantity}</span>
                       {ing?.tescoUrl ? (
                         <a

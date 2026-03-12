@@ -2,7 +2,7 @@ import { useState, FormEvent } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Form, FormField, FormLabel, FormMessage } from "@/components/ui/form";
-import { addIngredient } from "@/lib/github";
+import { addIngredient } from "@/lib/data";
 import { getTescoSearchUrl, getGoogleSearchUrl } from "@/lib/utils";
 import { ExternalLink } from "lucide-react";
 
@@ -67,7 +67,13 @@ export function IngredientForm({ onIngredientAdded }: IngredientFormProps) {
               variant="outline"
               className="h-9 w-9 shrink-0"
               title="Find on Tesco (opens search)"
-              onClick={() => window.open(getTescoSearchUrl(name), "_blank", "noopener,noreferrer")}
+              onClick={() =>
+                window.open(
+                  getTescoSearchUrl(name),
+                  "_blank",
+                  "noopener,noreferrer",
+                )
+              }
               disabled={isLoading}
             >
               <ExternalLink className="size-4" />
@@ -77,7 +83,13 @@ export function IngredientForm({ onIngredientAdded }: IngredientFormProps) {
               variant="outline"
               className="h-9 shrink-0"
               title="Search on Google for Tesco link"
-              onClick={() => window.open(getGoogleSearchUrl(name), "_blank", "noopener,noreferrer")}
+              onClick={() =>
+                window.open(
+                  getGoogleSearchUrl(name),
+                  "_blank",
+                  "noopener,noreferrer",
+                )
+              }
               disabled={isLoading}
             >
               Google

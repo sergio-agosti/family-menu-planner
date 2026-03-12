@@ -8,7 +8,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import type { Ingredient } from "@/lib/github";
+import type { Ingredient } from "@/lib/data";
 
 export interface IngredientQuantityRow {
   ingredientId: string;
@@ -18,7 +18,9 @@ export interface IngredientQuantityRow {
 interface RecipeIngredientRowsProps {
   ingredients: Ingredient[];
   value: IngredientQuantityRow[];
-  onSave: (items: { ingredientId: string; quantity: string }[]) => Promise<void>;
+  onSave: (
+    items: { ingredientId: string; quantity: string }[],
+  ) => Promise<void>;
   onCancel: () => void;
   saving: boolean;
 }
@@ -31,19 +33,32 @@ export function RecipeIngredientRows({
   saving,
 }: RecipeIngredientRowsProps) {
   const [rows, setRows] = useState<IngredientQuantityRow[]>(
-    value.length ? [...value] : [{ ingredientId: "", quantity: "" }]
+    value.length ? [...value] : [{ ingredientId: "", quantity: "" }],
   );
 
   useEffect(() => {
-    setRows(value.length ? value.map((v) => ({ ...v })) : [{ ingredientId: "", quantity: "" }]);
+    setRows(
+      value.length
+        ? value.map((v) => ({ ...v }))
+        : [{ ingredientId: "", quantity: "" }],
+    );
   }, [JSON.stringify(value)]);
 
-  const addRow = () => setRows((prev) => [...prev, { ingredientId: "", quantity: "" }]);
+  const addRow = () =>
+    setRows((prev) => [...prev, { ingredientId: "", quantity: "" }]);
 
   const removeRow = (index: number) =>
-    setRows((prev) => (prev.length <= 1 ? [{ ingredientId: "", quantity: "" }] : prev.filter((_, i) => i !== index)));
+    setRows((prev) =>
+      prev.length <= 1
+        ? [{ ingredientId: "", quantity: "" }]
+        : prev.filter((_, i) => i !== index),
+    );
 
-  const updateRow = (index: number, field: "ingredientId" | "quantity", val: string) =>
+  const updateRow = (
+    index: number,
+    field: "ingredientId" | "quantity",
+    val: string,
+  ) =>
     setRows((prev) => {
       const next = [...prev];
       next[index] = { ...next[index], [field]: val };
@@ -52,7 +67,12 @@ export function RecipeIngredientRows({
 
   const handleSave = () => {
     const items = rows.filter((r) => r.ingredientId.trim());
-    onSave(items.map((r) => ({ ingredientId: r.ingredientId, quantity: r.quantity || "" })));
+    onSave(
+      items.map((r) => ({
+        ingredientId: r.ingredientId,
+        quantity: r.quantity || "",
+      })),
+    );
   };
 
   return (
@@ -61,7 +81,9 @@ export function RecipeIngredientRows({
         <div key={index} className="flex gap-2 items-center">
           <Select
             value={row.ingredientId || "__none__"}
-            onValueChange={(v) => updateRow(index, "ingredientId", v === "__none__" ? "" : v)}
+            onValueChange={(v) =>
+              updateRow(index, "ingredientId", v === "__none__" ? "" : v)
+            }
           >
             <SelectTrigger className="w-[200px]">
               <SelectValue placeholder="Ingredient" />
@@ -99,7 +121,13 @@ export function RecipeIngredientRows({
         <Button type="button" size="sm" onClick={handleSave} disabled={saving}>
           {saving ? "Saving…" : "Save"}
         </Button>
-        <Button type="button" variant="ghost" size="sm" onClick={onCancel} disabled={saving}>
+        <Button
+          type="button"
+          variant="ghost"
+          size="sm"
+          onClick={onCancel}
+          disabled={saving}
+        >
           Cancel
         </Button>
       </div>
