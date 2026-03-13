@@ -101,7 +101,7 @@ export async function getData(): Promise<AppData> {
         .order("created_at", { ascending: true }),
       client.from("ingredients").select("id, name, tesco_url").order("name"),
       client
-        .from("recipe_ingredients")
+        .from("ingredients_recipes")
         .select("recipe_id, ingredient_id, quantity"),
       client.from("plan").select("date, breakfast, lunch, dinner"),
     ]);
@@ -247,7 +247,7 @@ export async function setRecipeIngredients(
 ): Promise<void> {
   const client = ensureSupabase();
 
-  await client.from("recipe_ingredients").delete().eq("recipe_id", recipeId);
+  await client.from("ingredients_recipes").delete().eq("recipe_id", recipeId);
 
   if (items.length) {
     const rows = items
@@ -257,7 +257,7 @@ export async function setRecipeIngredients(
         ingredient_id: ingredientId,
         quantity: quantity.trim() || "",
       }));
-    const { error } = await client.from("recipe_ingredients").insert(rows);
+    const { error } = await client.from("ingredients_recipes").insert(rows);
     if (error) throw new Error(error.message);
   }
 }

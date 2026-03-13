@@ -7,7 +7,7 @@ alwaysApply: true
 
 **What it is**: A menu planner app. Users manage **recipes** and **ingredients** (ingredients can have an optional Tesco URL). Recipes link to ingredients with a **quantity** per ingredient. A **weekly plan** shows 2 weeks at a time; each day has optional **breakfast**, **lunch**, and **dinner** slots, each slot holding zero or more recipes.
 
-**Stack**: React 19, TypeScript, Vite 7, Tailwind CSS 4. Data is stored in **Supabase** (tables: `recipes`, `ingredients`, `recipe_ingredients`, `plan`). All UI uses **shadcn** components from `@/components/ui` (add new ones with `npx shadcn@latest add <component>`).
+**Stack**: React 19, TypeScript, Vite 7, Tailwind CSS 4. Data is stored in **Supabase** (tables: `recipes`, `ingredients`, `ingredients_recipes`, `plan`). All UI uses **shadcn** components from `@/components/ui` (add new ones with `npx shadcn@latest add <component>`).
 
 **Data layer**: `src/lib/data.ts` – Supabase client is in `src/lib/supabase.ts`. Types (`Recipe`, `Ingredient`, `RecipeIngredient`, `DayPlan`, `AppData`) and all data helpers (`getData`, `addRecipe`, `addIngredient`, `setRecipeIngredients`, `setSlotRecipes`, etc.) live there. Everything goes to Supabase.
 

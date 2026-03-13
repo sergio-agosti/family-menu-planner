@@ -10,5 +10,5 @@ export function getTescoSearchUrl(query: string): string {
 }
 
 export function getGoogleSearchUrl(query: string): string {
-  return `https://www.google.com/search?q=${encodeURIComponent(`tesco ${query.trim()}`)}`;
+  return `https://www.google.com/search?q=${encodeURIComponent(`site:tesco.com ${query.trim()}`)}`;
 }
