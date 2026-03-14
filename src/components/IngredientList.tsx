@@ -103,7 +103,7 @@ export function IngredientList({ refreshTrigger }: IngredientListProps) {
           placeholder="Search ingredients…"
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
-          className="max-w-xs"
+          className="w-full"
         />
         <ul className="space-y-2">
           {filtered.length === 0 ? (

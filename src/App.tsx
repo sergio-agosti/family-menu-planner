@@ -117,7 +117,10 @@ function App() {
             </DialogContent>
           </Dialog>
 
-          <TabsContent value="recipes" className="space-y-4 sm:space-y-6">
+          <TabsContent
+            value="recipes"
+            className="grid grid-cols-1 gap-4 sm:gap-6 md:grid-cols-2"
+          >
             <div className="rounded-lg border bg-card p-4 shadow-sm sm:p-6">
               <h2 className="mb-4 text-xl font-semibold sm:text-2xl">
                 Add New Recipe
