@@ -19,11 +19,12 @@ export interface RecipeIngredient {
 }
 
 export type MealType = "breakfast" | "lunch" | "dinner";
+export type TargetType = "adults" | "kids";
 
 export interface DayPlan {
-  breakfast?: string[];
-  lunch?: string[];
-  dinner?: string[];
+  breakfast?: Partial<Record<TargetType, string[]>>;
+  lunch?: Partial<Record<TargetType, string[]>>;
+  dinner?: Partial<Record<TargetType, string[]>>;
 }
 
 export interface AppData {
@@ -70,24 +71,41 @@ function mapRecipeIngredient(row: {
   };
 }
 
-function mapPlanRow(row: {
-  date: string;
-  breakfast: string[] | null;
-  lunch: string[] | null;
-  dinner: string[] | null;
-}): [string, DayPlan] {
-  const dateKey =
-    typeof row.date === "string"
-      ? row.date
-      : ((row as { date: unknown }).date as string);
-  return [
-    dateKey,
-    {
-      breakfast: row.breakfast?.length ? row.breakfast : undefined,
-      lunch: row.lunch?.length ? row.lunch : undefined,
-      dinner: row.dinner?.length ? row.dinner : undefined,
-    },
-  ];
+interface PlanRow {
+  happening_at: string;
+  meal: MealType;
+  target: TargetType;
+  recipe_id: string;
+}
+
+function mapPlansToDayPlan(rows: PlanRow[]): Record<string, DayPlan> {
+  const out: Record<string, DayPlan> = {};
+
+  for (const row of rows) {
+    const key = row.happening_at;
+    const existing = out[key] ?? {};
+    const meal = row.meal;
+    const target = row.target;
+    const mealEntry =
+      (
+        existing as Record<
+          MealType,
+          Partial<Record<TargetType, string[]>> | undefined
+        >
+      )[meal] ?? {};
+    const list =
+      (mealEntry as Partial<Record<TargetType, string[]>>)[target] ?? [];
+    (mealEntry as Record<TargetType, string[]>)[target] = [
+      ...list,
+      row.recipe_id,
+    ];
+    (existing as Record<MealType, Partial<Record<TargetType, string[]>>>)[
+      meal
+    ] = mealEntry;
+    out[key] = existing;
+  }
+
+  return out;
 }
 
 export async function getData(): Promise<AppData> {
@@ -103,7 +121,7 @@ export async function getData(): Promise<AppData> {
       client
         .from("ingredients_recipes")
         .select("recipe_id, ingredient_id, quantity"),
-      client.from("plan").select("date, breakfast, lunch, dinner"),
+      client.from("plans").select("happening_at, meal, target, recipe_id"),
     ]);
 
   if (recipesRes.error) throw new Error(recipesRes.error.message);
@@ -117,11 +135,7 @@ export async function getData(): Promise<AppData> {
   const recipeIngredients = (recipeIngredientsRes.data ?? []).map(
     mapRecipeIngredient,
   );
-  const plan: Record<string, DayPlan> = {};
-  for (const row of planRes.data ?? []) {
-    const [key, day] = mapPlanRow(row as Parameters<typeof mapPlanRow>[0]);
-    plan[key] = day;
-  }
+  const plan = mapPlansToDayPlan((planRes.data ?? []) as unknown as PlanRow[]);
 
   return { recipes, ingredients, recipeIngredients, plan };
 }
@@ -167,30 +181,11 @@ export async function updateRecipe(
 export async function deleteRecipe(id: string): Promise<void> {
   const client = ensureSupabase();
 
-  const planRes = await client
-    .from("plan")
-    .select("date, breakfast, lunch, dinner");
-  if (planRes.error) throw new Error(planRes.error.message);
-
-  for (const row of planRes.data ?? []) {
-    const r = row as {
-      date: string;
-      breakfast: string[];
-      lunch: string[];
-      dinner: string[];
-    };
-    const breakfast = (r.breakfast ?? []).filter((x) => x !== id);
-    const lunch = (r.lunch ?? []).filter((x) => x !== id);
-    const dinner = (r.dinner ?? []).filter((x) => x !== id);
-    if (!breakfast.length && !lunch.length && !dinner.length) {
-      await client.from("plan").delete().eq("date", r.date);
-    } else {
-      await client
-        .from("plan")
-        .update({ breakfast, lunch, dinner })
-        .eq("date", r.date);
-    }
-  }
+  const { error: plansError } = await client
+    .from("plans")
+    .delete()
+    .eq("recipe_id", id);
+  if (plansError) throw new Error(plansError.message);
 
   const { error } = await client.from("recipes").delete().eq("id", id);
   if (error) throw new Error(error.message);
@@ -271,60 +266,42 @@ export async function getPlanForDateRange(
   const end = endDate.toISOString().slice(0, 10);
 
   const { data, error } = await client
-    .from("plan")
-    .select("date, breakfast, lunch, dinner")
-    .gte("date", start)
-    .lte("date", end);
+    .from("plans")
+    .select("happening_at, meal, target, recipe_id")
+    .gte("happening_at", start)
+    .lte("happening_at", end);
 
   if (error) throw new Error(error.message);
 
-  const out: Record<string, DayPlan> = {};
-  for (const row of data ?? []) {
-    const [key, day] = mapPlanRow(row as Parameters<typeof mapPlanRow>[0]);
-    out[key] = day;
-  }
-  return out;
+  return mapPlansToDayPlan((data ?? []) as unknown as PlanRow[]);
 }
 
 export async function setSlotRecipes(
   dateKey: string,
   mealType: MealType,
+  target: TargetType,
   recipeIds: string[],
 ): Promise<void> {
   const client = ensureSupabase();
 
-  const { data: existing } = await client
-    .from("plan")
-    .select("breakfast, lunch, dinner")
-    .eq("date", dateKey)
-    .maybeSingle();
+  const { error: deleteError } = await client
+    .from("plans")
+    .delete()
+    .eq("happening_at", dateKey)
+    .eq("meal", mealType)
+    .eq("target", target);
+  if (deleteError) throw new Error(deleteError.message);
 
-  const row = existing as {
-    breakfast: string[];
-    lunch: string[];
-    dinner: string[];
-  } | null;
-  const breakfast = row?.breakfast ?? [];
-  const lunch = row?.lunch ?? [];
-  const dinner = row?.dinner ?? [];
+  if (!recipeIds.length) return;
 
-  const payload = {
-    date: dateKey,
-    breakfast: mealType === "breakfast" ? recipeIds : breakfast,
-    lunch: mealType === "lunch" ? recipeIds : lunch,
-    dinner: mealType === "dinner" ? recipeIds : dinner,
-  };
+  const rows = recipeIds.map((recipeId) => ({
+    happening_at: dateKey,
+    meal: mealType,
+    target,
+    recipe_id: recipeId,
+  }));
 
-  const hasAny =
-    payload.breakfast.length || payload.lunch.length || payload.dinner.length;
-  if (!hasAny) {
-    await client.from("plan").delete().eq("date", dateKey);
-    return;
-  }
-
-  const { error } = await client
-    .from("plan")
-    .upsert(payload, { onConflict: "date" });
+  const { error } = await client.from("plans").insert(rows);
   if (error) throw new Error(error.message);
 }
 
@@ -333,25 +310,37 @@ export async function setDayPlan(
   dayPlan: DayPlan,
 ): Promise<void> {
   const client = ensureSupabase();
-  const hasAny =
-    (dayPlan.breakfast?.length ?? 0) +
-      (dayPlan.lunch?.length ?? 0) +
-      (dayPlan.dinner?.length ?? 0) >
-    0;
 
-  if (!hasAny) {
-    await client.from("plan").delete().eq("date", dateKey);
-    return;
+  const { error: deleteError } = await client
+    .from("plans")
+    .delete()
+    .eq("happening_at", dateKey);
+  if (deleteError) throw new Error(deleteError.message);
+
+  const rows: {
+    happening_at: string;
+    meal: MealType;
+    target: TargetType;
+    recipe_id: string;
+  }[] = [];
+
+  for (const meal of ["breakfast", "lunch", "dinner"] as const) {
+    const mealEntry = dayPlan[meal] ?? {};
+    for (const target of ["adults", "kids"] as const) {
+      const ids = mealEntry[target] ?? [];
+      for (const recipeId of ids) {
+        rows.push({
+          happening_at: dateKey,
+          meal,
+          target,
+          recipe_id: recipeId,
+        });
+      }
+    }
   }
 
-  const { error } = await client.from("plan").upsert(
-    {
-      date: dateKey,
-      breakfast: dayPlan.breakfast ?? [],
-      lunch: dayPlan.lunch ?? [],
-      dinner: dayPlan.dinner ?? [],
-    },
-    { onConflict: "date" },
-  );
+  if (!rows.length) return;
+
+  const { error } = await client.from("plans").insert(rows);
   if (error) throw new Error(error.message);
 }

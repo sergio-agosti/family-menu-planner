@@ -15,12 +15,18 @@ import {
   type DayPlan,
   type MealType,
   type Recipe,
+  type TargetType,
 } from "@/lib/data";
 
 const MEAL_TYPES: { key: MealType; label: string }[] = [
   { key: "breakfast", label: "Breakfast" },
   { key: "lunch", label: "Lunch" },
   { key: "dinner", label: "Dinner" },
+];
+
+const TARGETS: { key: TargetType; label: string }[] = [
+  { key: "adults", label: "Adults" },
+  { key: "kids", label: "Kids" },
 ];
 
 function getMonday(d: Date): Date {
@@ -89,18 +95,25 @@ export function WeeklyPlan({ refreshTrigger }: WeeklyPlanProps) {
   const addRecipeToSlot = async (
     dateKey: string,
     mealType: MealType,
+    target: TargetType,
     recipeId: string,
   ) => {
-    const current = plan[dateKey]?.[mealType] ?? [];
+    const current = plan[dateKey]?.[mealType]?.[target] ?? [];
     if (current.includes(recipeId)) return;
-    setSaving(`${dateKey}-${mealType}`);
+    setSaving(`${dateKey}-${mealType}-${target}`);
     try {
-      await setSlotRecipes(dateKey, mealType, [...current, recipeId]);
+      await setSlotRecipes(dateKey, mealType, target, [...current, recipeId]);
       setPlan((prev) => ({
         ...prev,
         [dateKey]: {
           ...prev[dateKey],
-          [mealType]: [...(prev[dateKey]?.[mealType] ?? []), recipeId],
+          [mealType]: {
+            ...(prev[dateKey]?.[mealType] ?? {}),
+            [target]: [
+              ...(prev[dateKey]?.[mealType]?.[target] ?? []),
+              recipeId,
+            ],
+          },
         },
       }));
     } finally {
@@ -111,18 +124,22 @@ export function WeeklyPlan({ refreshTrigger }: WeeklyPlanProps) {
   const removeRecipeFromSlot = async (
     dateKey: string,
     mealType: MealType,
+    target: TargetType,
     recipeId: string,
   ) => {
-    const current = plan[dateKey]?.[mealType] ?? [];
+    const current = plan[dateKey]?.[mealType]?.[target] ?? [];
     const next = current.filter((id) => id !== recipeId);
-    setSaving(`${dateKey}-${mealType}`);
+    setSaving(`${dateKey}-${mealType}-${target}`);
     try {
-      await setSlotRecipes(dateKey, mealType, next);
+      await setSlotRecipes(dateKey, mealType, target, next);
       setPlan((prev) => ({
         ...prev,
         [dateKey]: {
           ...prev[dateKey],
-          [mealType]: next.length ? next : undefined,
+          [mealType]: {
+            ...(prev[dateKey]?.[mealType] ?? {}),
+            [target]: next.length ? next : undefined,
+          },
         },
       }));
     } finally {
@@ -194,60 +211,86 @@ export function WeeklyPlan({ refreshTrigger }: WeeklyPlanProps) {
                 <div className="p-2 border-r text-sm font-medium">
                   {formatDay(d)}
                 </div>
-                {MEAL_TYPES.map(({ key, label }) => {
-                  const ids = dayPlan[key] ?? [];
-                  const isSaving = saving === `${dateKey}-${key}`;
+                {MEAL_TYPES.map(({ key }) => {
+                  const mealEntry = dayPlan[key] ?? {};
                   return (
                     <div
                       key={key}
-                      className="p-2 border-r last:border-r-0 flex flex-col min-w-0"
+                      className="p-2 border-r last:border-r-0 flex flex-col gap-2 min-w-0"
                     >
-                      <ul className="text-sm space-y-0.5 mb-1">
-                        {ids.map((id) => {
-                          const r = recipeById[id];
-                          return (
-                            <li
-                              key={id}
-                              className="flex items-center justify-between gap-1"
-                            >
-                              <span className="truncate">{r?.name ?? id}</span>
-                              <Button
-                                type="button"
-                                variant="ghost"
-                                size="sm"
-                                className="h-5 px-1 text-muted-foreground hover:text-destructive shrink-0"
-                                onClick={() =>
-                                  removeRecipeFromSlot(dateKey, key, id)
+                      {TARGETS.map(({ key: targetKey, label: targetLabel }) => {
+                        const ids = mealEntry[targetKey] ?? [];
+                        const isSaving =
+                          saving === `${dateKey}-${key}-${targetKey}`;
+                        return (
+                          <div
+                            key={targetKey}
+                            className="flex flex-col min-w-0"
+                          >
+                            <div className="mb-1 flex items-center justify-between">
+                              <span className="text-xs font-semibold text-muted-foreground">
+                                {targetLabel}
+                              </span>
+                            </div>
+                            <ul className="text-sm space-y-0.5 mb-1">
+                              {ids.map((id) => {
+                                const r = recipeById[id];
+                                return (
+                                  <li
+                                    key={id}
+                                    className="flex items-center justify-between gap-1"
+                                  >
+                                    <span className="truncate">
+                                      {r?.name ?? id}
+                                    </span>
+                                    <Button
+                                      type="button"
+                                      variant="ghost"
+                                      size="sm"
+                                      className="h-5 px-1 text-muted-foreground hover:text-destructive shrink-0"
+                                      onClick={() =>
+                                        removeRecipeFromSlot(
+                                          dateKey,
+                                          key,
+                                          targetKey,
+                                          id,
+                                        )
+                                      }
+                                      disabled={isSaving}
+                                    >
+                                      ×
+                                    </Button>
+                                  </li>
+                                );
+                              })}
+                            </ul>
+                            <Select
+                              key={`${dateKey}-${key}-${targetKey}-${ids.length}`}
+                              value="__add__"
+                              onValueChange={(v) => {
+                                if (v && v !== "__add__") {
+                                  addRecipeToSlot(dateKey, key, targetKey, v);
                                 }
-                                disabled={isSaving}
-                              >
-                                ×
-                              </Button>
-                            </li>
-                          );
-                        })}
-                      </ul>
-                      <Select
-                        key={`${dateKey}-${key}-${(dayPlan[key] ?? []).length}`}
-                        value="__add__"
-                        onValueChange={(v) => {
-                          if (v && v !== "__add__")
-                            addRecipeToSlot(dateKey, key, v);
-                        }}
-                        disabled={isSaving || recipes.length === 0}
-                      >
-                        <SelectTrigger className="h-8 text-xs">
-                          <SelectValue placeholder="+ Add" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="__add__">+ Add recipe</SelectItem>
-                          {recipes.map((r) => (
-                            <SelectItem key={r.id} value={r.id}>
-                              {r.name}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+                              }}
+                              disabled={isSaving || recipes.length === 0}
+                            >
+                              <SelectTrigger className="h-8 text-xs">
+                                <SelectValue placeholder="+ Add" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="__add__">
+                                  + Add recipe
+                                </SelectItem>
+                                {recipes.map((r) => (
+                                  <SelectItem key={r.id} value={r.id}>
+                                    {r.name}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </div>
+                        );
+                      })}
                     </div>
                   );
                 })}
