@@ -244,8 +244,8 @@ export function WeeklyPlan({ refreshTrigger, onOpenRecipe }: WeeklyPlanProps) {
           </Button>
         </div>
       </CardHeader>
-      <CardContent className="overflow-x-auto rounded-b-xl p-0 !px-0 !pb-0">
-        <div className="min-w-[28rem]">
+      <CardContent className="overflow-x-auto rounded-b-xl p-0 px-0! pb-0!">
+        <div className="min-w-md">
           <div
             className="grid gap-0 border-t bg-muted/50 backdrop-blur-md"
             style={{ gridTemplateColumns: gridCols }}

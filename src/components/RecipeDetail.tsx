@@ -19,6 +19,7 @@ import {
   addIngredient,
   getData,
   setRecipeIngredients,
+  updateIngredient,
   type Recipe,
   type Ingredient,
   type RecipeIngredient,
@@ -27,6 +28,7 @@ import { getTescoSearchUrl } from "@/lib/utils";
 import {
   Check,
   ChevronsUpDown,
+  ClipboardPaste,
   ExternalLink,
   Plus,
   Search,
@@ -64,6 +66,7 @@ export function RecipeDetail({
   const [quantityDraft, setQuantityDraft] = useState<Record<string, string>>(
     {},
   );
+  const [pastingId, setPastingId] = useState<string | null>(null);
 
   const refreshIngredients = () =>
     getData().then((data) =>
@@ -130,7 +133,16 @@ export function RecipeDetail({
       setIngredients((prev) =>
         [...prev, newIngredient].sort((a, b) => a.name.localeCompare(b.name)),
       );
-      setAddIngredientId(newIngredient.id);
+      const next = [
+        ...recipeIngredients.map((ri) => ({
+          ingredientId: ri.ingredientId,
+          quantity: ri.quantity,
+        })),
+        { ingredientId: newIngredient.id, quantity: addQuantity.trim() },
+      ];
+      await persistIngredients(next);
+      setAddIngredientId("");
+      setAddQuantity("");
       setAddIngredientSearch("");
       setAddIngredientOpen(false);
     } finally {
@@ -160,6 +172,21 @@ export function RecipeDetail({
         : { ingredientId: ri.ingredientId, quantity: ri.quantity },
     );
     persistIngredients(next);
+  };
+
+  const handlePasteTescoUrl = async (ing: Ingredient) => {
+    setPastingId(ing.id);
+    try {
+      const url = (await navigator.clipboard.readText()).trim();
+      if (url) {
+        await updateIngredient(ing.id, { tescoUrl: url });
+        const data = await getData();
+        setIngredients(data.ingredients);
+        onUpdated?.();
+      }
+    } finally {
+      setPastingId(null);
+    }
   };
 
   const byId = Object.fromEntries(ingredients.map((i) => [i.id, i]));
@@ -198,16 +225,8 @@ export function RecipeDetail({
             >
               <Command
                 value={addIngredientId}
-                onValueChange={(v) => {
-                  if (Date.now() - addIngredientOpenAt.current < 150) return;
-                  if (v === "__create__") {
-                    handleCreateIngredient(addIngredientSearch);
-                  } else {
-                    setAddIngredientId(v);
-                    setAddIngredientOpen(false);
-                  }
-                }}
                 filter={(value, search, keywords) => {
+                  if (value === "__create__") return 1;
                   const s = (search ?? "").trim().toLowerCase();
                   if (!s) return 1;
                   const text = [value, ...(keywords ?? [])]
@@ -223,18 +242,17 @@ export function RecipeDetail({
                 />
                 <CommandList>
                   <CommandEmpty>No ingredient found.</CommandEmpty>
-                  {addIngredientSearch.trim() && (
-                    <CommandItem value="__create__" forceMount>
-                      <Plus className="mr-2 size-4" />
-                      Add &quot;{addIngredientSearch.trim()}&quot; as new
-                      ingredient
-                    </CommandItem>
-                  )}
                   {ingredients.map((ing) => (
                     <CommandItem
                       key={ing.id}
                       value={ing.id}
                       keywords={[ing.name]}
+                      onSelect={() => {
+                        if (Date.now() - addIngredientOpenAt.current < 150)
+                          return;
+                        setAddIngredientId(ing.id);
+                        setAddIngredientOpen(false);
+                      }}
                     >
                       <Check
                         className={
@@ -248,6 +266,22 @@ export function RecipeDetail({
                   ))}
                 </CommandList>
               </Command>
+              {addIngredientSearch.trim() && (
+                <div className="border-t p-1">
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    className="w-full justify-start gap-2 font-normal"
+                    disabled={creatingIngredient}
+                    onClick={() => handleCreateIngredient(addIngredientSearch)}
+                  >
+                    <Plus className="size-4 shrink-0" />
+                    Add &quot;{addIngredientSearch.trim()}&quot; as new
+                    ingredient
+                  </Button>
+                </div>
+              )}
             </PopoverContent>
           </Popover>
           <Input
@@ -322,6 +356,18 @@ export function RecipeDetail({
                       >
                         <ExternalLink className="size-4" />
                       </a>
+                    ) : ing ? (
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        className="h-9 w-9 touch-manipulation p-0 text-muted-foreground"
+                        title="Paste Tesco URL from clipboard"
+                        onClick={() => handlePasteTescoUrl(ing)}
+                        disabled={pastingId === ing.id}
+                      >
+                        <ClipboardPaste className="size-4" />
+                      </Button>
                     ) : null}
                     {ing ? (
                       <Button
