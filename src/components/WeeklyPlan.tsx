@@ -367,7 +367,12 @@ export function WeeklyPlan({ refreshTrigger }: WeeklyPlanProps) {
                                     placeholder=""
                                   />
                                 </SelectTrigger>
-                                <SelectContent>
+                                <SelectContent
+                                  position="popper"
+                                  side="bottom"
+                                  align="start"
+                                  sideOffset={4}
+                                >
                                   <SelectItem
                                     value="__add__"
                                     className="hidden"
