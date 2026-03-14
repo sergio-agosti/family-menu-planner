@@ -1,16 +1,22 @@
-import { useState, useEffect } from "react";
+import { useRef, useState, useEffect } from "react";
 import { RemovablePill } from "@/components/RemovablePill";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+  Command,
+  CommandEmpty,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from "@/components/ui/command";
 import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import {
+  addIngredient,
   getData,
   setRecipeIngredients,
   type Recipe,
@@ -18,7 +24,15 @@ import {
   type RecipeIngredient,
 } from "@/lib/data";
 import { getTescoSearchUrl } from "@/lib/utils";
-import { ExternalLink, Plus, Search, Trash2, X } from "lucide-react";
+import {
+  Check,
+  ChevronsUpDown,
+  ExternalLink,
+  Plus,
+  Search,
+  Trash2,
+  X,
+} from "lucide-react";
 
 interface RecipeDetailProps {
   recipeId: string;
@@ -43,6 +57,10 @@ export function RecipeDetail({
   const [saving, setSaving] = useState(false);
   const [addIngredientId, setAddIngredientId] = useState("");
   const [addQuantity, setAddQuantity] = useState("");
+  const [addIngredientOpen, setAddIngredientOpen] = useState(false);
+  const addIngredientOpenAt = useRef<number>(0);
+  const [addIngredientSearch, setAddIngredientSearch] = useState("");
+  const [creatingIngredient, setCreatingIngredient] = useState(false);
   const [quantityDraft, setQuantityDraft] = useState<Record<string, string>>(
     {},
   );
@@ -99,7 +117,25 @@ export function RecipeDetail({
     ];
     setAddIngredientId("");
     setAddQuantity("");
+    setAddIngredientOpen(false);
     persistIngredients(next);
+  };
+
+  const handleCreateIngredient = async (name: string) => {
+    const trimmed = name.trim();
+    if (!trimmed || creatingIngredient) return;
+    setCreatingIngredient(true);
+    try {
+      const newIngredient = await addIngredient(trimmed, "");
+      setIngredients((prev) =>
+        [...prev, newIngredient].sort((a, b) => a.name.localeCompare(b.name)),
+      );
+      setAddIngredientId(newIngredient.id);
+      setAddIngredientSearch("");
+      setAddIngredientOpen(false);
+    } finally {
+      setCreatingIngredient(false);
+    }
   };
 
   const handleQuantityBlur = (ingredientId: string) => {
@@ -133,22 +169,87 @@ export function RecipeDetail({
       {!inline && <h4 className="text-sm font-medium">Ingredients</h4>}
       <div className="grid grid-cols-[2fr_1fr_auto] items-center gap-x-2 gap-y-2">
         <div className="col-span-full grid grid-cols-subgrid items-center gap-x-2 text-sm">
-          <Select
-            value={addIngredientId || "__none__"}
-            onValueChange={(v) => setAddIngredientId(v === "__none__" ? "" : v)}
+          <Popover
+            open={addIngredientOpen}
+            onOpenChange={(open) => {
+              setAddIngredientOpen(open);
+              if (open) addIngredientOpenAt.current = Date.now();
+              if (!open) setAddIngredientSearch("");
+            }}
           >
-            <SelectTrigger className="w-full min-w-0">
-              <SelectValue placeholder="Add ingredient…" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="__none__">Add ingredient…</SelectItem>
-              {ingredients.map((ing) => (
-                <SelectItem key={ing.id} value={ing.id}>
-                  {ing.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+            <PopoverTrigger asChild>
+              <Button
+                variant="outline"
+                role="combobox"
+                aria-expanded={addIngredientOpen}
+                className="h-9 w-full min-w-0 justify-between font-normal"
+              >
+                <span className="truncate">
+                  {addIngredientId
+                    ? (byId[addIngredientId]?.name ?? addIngredientId)
+                    : "Add ingredient…"}
+                </span>
+                <ChevronsUpDown className="ml-2 size-4 shrink-0 opacity-50" />
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent
+              className="w-(--radix-popover-trigger-width) p-0"
+              align="start"
+            >
+              <Command
+                value={addIngredientId}
+                onValueChange={(v) => {
+                  if (Date.now() - addIngredientOpenAt.current < 150) return;
+                  if (v === "__create__") {
+                    handleCreateIngredient(addIngredientSearch);
+                  } else {
+                    setAddIngredientId(v);
+                    setAddIngredientOpen(false);
+                  }
+                }}
+                filter={(value, search, keywords) => {
+                  const s = (search ?? "").trim().toLowerCase();
+                  if (!s) return 1;
+                  const text = [value, ...(keywords ?? [])]
+                    .join(" ")
+                    .toLowerCase();
+                  return text.includes(s) ? 1 : 0;
+                }}
+              >
+                <CommandInput
+                  placeholder="Search ingredients…"
+                  value={addIngredientSearch}
+                  onValueChange={setAddIngredientSearch}
+                />
+                <CommandList>
+                  <CommandEmpty>No ingredient found.</CommandEmpty>
+                  {addIngredientSearch.trim() && (
+                    <CommandItem value="__create__" forceMount>
+                      <Plus className="mr-2 size-4" />
+                      Add &quot;{addIngredientSearch.trim()}&quot; as new
+                      ingredient
+                    </CommandItem>
+                  )}
+                  {ingredients.map((ing) => (
+                    <CommandItem
+                      key={ing.id}
+                      value={ing.id}
+                      keywords={[ing.name]}
+                    >
+                      <Check
+                        className={
+                          addIngredientId === ing.id
+                            ? "mr-2 size-4 opacity-100"
+                            : "mr-2 size-4 opacity-0"
+                        }
+                      />
+                      {ing.name}
+                    </CommandItem>
+                  ))}
+                </CommandList>
+              </Command>
+            </PopoverContent>
+          </Popover>
           <Input
             placeholder="Qty"
             value={addQuantity}
@@ -163,7 +264,7 @@ export function RecipeDetail({
               className="h-9 w-9 touch-manipulation p-0 text-muted-foreground"
               title="Add ingredient"
               onClick={handleAdd}
-              disabled={saving || !addIngredientId.trim()}
+              disabled={saving || !addIngredientId.trim() || creatingIngredient}
             >
               <Plus className="size-4" />
             </Button>

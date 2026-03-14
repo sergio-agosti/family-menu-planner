@@ -5,6 +5,8 @@ import { cn } from "@/lib/utils";
 interface RemovablePillProps {
   label: string;
   onRemove: () => void;
+  /** Optional click on the label (e.g. open recipe). Remove button still calls onRemove. */
+  onLabelClick?: () => void;
   disabled?: boolean;
   removeTitle?: string;
   /** When true, label expands to fill (e.g. in a grid column). When false, label has max-width. */
@@ -15,6 +17,7 @@ interface RemovablePillProps {
 export function RemovablePill({
   label,
   onRemove,
+  onLabelClick,
   disabled = false,
   removeTitle = "Remove",
   fullWidth = false,
@@ -23,10 +26,24 @@ export function RemovablePill({
   return (
     <Badge
       variant="secondary"
+      role={onLabelClick ? "button" : undefined}
+      tabIndex={onLabelClick ? 0 : undefined}
       className={cn(
         "w-full justify-between gap-1 px-2.5 py-1.5 text-xs font-normal",
+        onLabelClick && "cursor-pointer",
         className,
       )}
+      onClick={onLabelClick}
+      onKeyDown={
+        onLabelClick
+          ? (e) => {
+              if (e.key === "Enter" || e.key === " ") {
+                e.preventDefault();
+                onLabelClick();
+              }
+            }
+          : undefined
+      }
     >
       <span
         className={cn(
@@ -40,8 +57,11 @@ export function RemovablePill({
         type="button"
         variant="ghost"
         size="sm"
-        className="h-5 w-5 shrink-0 cursor-pointer touch-manipulation rounded-full p-0 text-muted-foreground hover:bg-muted hover:text-destructive sm:h-4 sm:w-4"
-        onClick={onRemove}
+        className="h-6 w-6 shrink-0 cursor-pointer touch-manipulation rounded-full p-0 text-base leading-none text-muted-foreground hover:bg-muted hover:text-destructive sm:h-5 sm:w-5 sm:text-sm"
+        onClick={(e) => {
+          e.stopPropagation();
+          onRemove();
+        }}
         disabled={disabled}
         title={removeTitle}
       >

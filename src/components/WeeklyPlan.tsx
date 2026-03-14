@@ -71,9 +71,10 @@ function formatDay(d: Date): string {
 
 interface WeeklyPlanProps {
   refreshTrigger: number;
+  onOpenRecipe?: (recipeId: string) => void;
 }
 
-export function WeeklyPlan({ refreshTrigger }: WeeklyPlanProps) {
+export function WeeklyPlan({ refreshTrigger, onOpenRecipe }: WeeklyPlanProps) {
   const [recipes, setRecipes] = useState<Recipe[]>([]);
   const [plan, setPlan] = useState<Record<string, DayPlan>>({});
   const [weekStart, setWeekStart] = useState<Date>(() => getMonday(new Date()));
@@ -407,6 +408,11 @@ export function WeeklyPlan({ refreshTrigger }: WeeklyPlanProps) {
                                           targetKey,
                                           id,
                                         )
+                                      }
+                                      onLabelClick={
+                                        onOpenRecipe
+                                          ? () => onOpenRecipe(id)
+                                          : undefined
                                       }
                                       disabled={isSaving}
                                       removeTitle="Remove recipe"

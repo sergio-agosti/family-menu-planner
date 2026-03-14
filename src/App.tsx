@@ -95,6 +95,28 @@ function App() {
             </TabsTrigger>
           </TabsList>
 
+          <Dialog
+            open={!!selectedRecipeId}
+            onOpenChange={(open) => !open && setSelectedRecipeId(null)}
+          >
+            <DialogContent
+              className="max-h-[90vh] max-w-2xl overflow-y-auto rounded-none border-0 bg-transparent p-0 shadow-none"
+              showCloseButton={false}
+            >
+              <DialogTitle className="sr-only">Recipe</DialogTitle>
+              <DialogDescription className="sr-only">
+                Recipe ingredients and details
+              </DialogDescription>
+              {selectedRecipeId && (
+                <RecipeDetail
+                  recipeId={selectedRecipeId}
+                  onClose={() => setSelectedRecipeId(null)}
+                  onUpdated={refresh}
+                />
+              )}
+            </DialogContent>
+          </Dialog>
+
           <TabsContent value="recipes" className="space-y-4 sm:space-y-6">
             <div className="rounded-lg border bg-card p-4 shadow-sm sm:p-6">
               <h2 className="mb-4 text-xl font-semibold sm:text-2xl">
@@ -106,30 +128,12 @@ function App() {
               refreshTrigger={refreshTrigger}
               onSelectRecipe={setSelectedRecipeId}
             />
-            <Dialog
-              open={!!selectedRecipeId}
-              onOpenChange={(open) => !open && setSelectedRecipeId(null)}
-            >
-              <DialogContent
-                className="max-h-[90vh] max-w-2xl overflow-y-auto rounded-none border-0 bg-transparent p-0 shadow-none"
-                showCloseButton={false}
-              >
-                <DialogTitle className="sr-only">Recipe</DialogTitle>
-                <DialogDescription className="sr-only">
-                  Recipe ingredients and details
-                </DialogDescription>
-                {selectedRecipeId && (
-                  <RecipeDetail
-                    recipeId={selectedRecipeId}
-                    onClose={() => setSelectedRecipeId(null)}
-                    onUpdated={refresh}
-                  />
-                )}
-              </DialogContent>
-            </Dialog>
           </TabsContent>
 
-          <TabsContent value="ingredients" className="space-y-4 sm:space-y-6">
+          <TabsContent
+            value="ingredients"
+            className="grid grid-cols-1 gap-4 sm:gap-6 md:grid-cols-2"
+          >
             <div className="rounded-lg border bg-card p-4 shadow-sm sm:p-6">
               <h2 className="mb-4 text-xl font-semibold sm:text-2xl">
                 Add Ingredient
@@ -140,7 +144,10 @@ function App() {
           </TabsContent>
 
           <TabsContent value="plan" className="space-y-4 sm:space-y-6">
-            <WeeklyPlan refreshTrigger={refreshTrigger} />
+            <WeeklyPlan
+              refreshTrigger={refreshTrigger}
+              onOpenRecipe={setSelectedRecipeId}
+            />
           </TabsContent>
         </Tabs>
       </div>
