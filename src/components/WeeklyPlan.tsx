@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from "react";
+import { Plus } from "lucide-react";
 import { RemovablePill } from "@/components/RemovablePill";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -247,10 +248,47 @@ export function WeeklyPlan({ refreshTrigger }: WeeklyPlanProps) {
                             key={targetKey}
                             className="flex min-w-0 flex-col"
                           >
-                            <span className="mb-0.5 text-[10px] font-semibold text-muted-foreground sm:text-xs">
-                              {targetLabel}
-                            </span>
-                            <div className="mb-1 flex flex-wrap gap-1">
+                            <div className="mb-0.5 flex items-center justify-between gap-1">
+                              <span className="text-[10px] font-semibold text-muted-foreground sm:text-xs">
+                                {targetLabel}
+                              </span>
+                              <Select
+                                key={`${dateKey}-${key}-${targetKey}-${ids.length}`}
+                                value="__add__"
+                                onValueChange={(v) => {
+                                  if (v && v !== "__add__") {
+                                    addRecipeToSlot(dateKey, key, targetKey, v);
+                                  }
+                                }}
+                                disabled={isSaving || recipes.length === 0}
+                              >
+                                <SelectTrigger
+                                  size="sm"
+                                  className="h-6 w-6 shrink-0 border-0 p-0 shadow-none [&>svg]:size-3.5 [&>svg:last-of-type]:hidden"
+                                  aria-label={`Add recipe to ${targetLabel}`}
+                                >
+                                  <Plus />
+                                  <SelectValue
+                                    className="sr-only"
+                                    placeholder="Add"
+                                  />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem
+                                    value="__add__"
+                                    className="hidden"
+                                  >
+                                    Add
+                                  </SelectItem>
+                                  {sortedRecipes.map((r) => (
+                                    <SelectItem key={r.id} value={r.id}>
+                                      {r.name}
+                                    </SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                            </div>
+                            <div className="flex flex-wrap gap-1">
                               {[...ids]
                                 .sort((a, b) =>
                                   (recipeById[a]?.name ?? "").localeCompare(
@@ -278,30 +316,6 @@ export function WeeklyPlan({ refreshTrigger }: WeeklyPlanProps) {
                                   );
                                 })}
                             </div>
-                            <Select
-                              key={`${dateKey}-${key}-${targetKey}-${ids.length}`}
-                              value="__add__"
-                              onValueChange={(v) => {
-                                if (v && v !== "__add__") {
-                                  addRecipeToSlot(dateKey, key, targetKey, v);
-                                }
-                              }}
-                              disabled={isSaving || recipes.length === 0}
-                            >
-                              <SelectTrigger className="h-7 min-h-9 w-full min-w-[5.5rem] text-xs sm:h-8">
-                                <SelectValue placeholder="+ Add" />
-                              </SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="__add__">
-                                  + Add recipe
-                                </SelectItem>
-                                {sortedRecipes.map((r) => (
-                                  <SelectItem key={r.id} value={r.id}>
-                                    {r.name}
-                                  </SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
                           </div>
                         );
                       })}

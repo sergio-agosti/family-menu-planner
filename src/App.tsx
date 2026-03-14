@@ -67,15 +67,6 @@ function App() {
         >
           <TabsList className="grid h-auto w-full min-w-0 grid-cols-3 gap-1 overflow-hidden p-1 sm:h-9">
             <TabsTrigger
-              value="recipes"
-              className="flex min-w-0 items-center justify-center gap-1.5 overflow-hidden px-2 py-2 text-xs sm:px-2 sm:py-1 sm:text-sm"
-              title="Recipes"
-              aria-label="Recipes"
-            >
-              <BookOpen className="size-4 shrink-0" />
-              <span className="hidden sm:inline">Recipes</span>
-            </TabsTrigger>
-            <TabsTrigger
               value="ingredients"
               className="flex min-w-0 items-center justify-center gap-1.5 overflow-hidden px-2 py-2 text-xs sm:px-2 sm:py-1 sm:text-sm"
               title="Ingredients"
@@ -83,6 +74,15 @@ function App() {
             >
               <Carrot className="size-4 shrink-0" />
               <span className="hidden sm:inline">Ingredients</span>
+            </TabsTrigger>
+            <TabsTrigger
+              value="recipes"
+              className="flex min-w-0 items-center justify-center gap-1.5 overflow-hidden px-2 py-2 text-xs sm:px-2 sm:py-1 sm:text-sm"
+              title="Recipes"
+              aria-label="Recipes"
+            >
+              <BookOpen className="size-4 shrink-0" />
+              <span className="hidden sm:inline">Recipes</span>
             </TabsTrigger>
             <TabsTrigger
               value="plan"
