@@ -52,7 +52,7 @@ export function IngredientForm({ onIngredientAdded }: IngredientFormProps) {
         </FormField>
         <FormField>
           <FormLabel htmlFor="ingredient-tesco">Tesco URL (optional)</FormLabel>
-          <div className="flex gap-2 items-center">
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
             <Input
               id="ingredient-tesco"
               type="url"
@@ -60,40 +60,42 @@ export function IngredientForm({ onIngredientAdded }: IngredientFormProps) {
               value={tescoUrl}
               onChange={(e) => setTescoUrl(e.target.value)}
               disabled={isLoading}
-              className="flex-1 h-9"
+              className="h-9 min-w-0 flex-1"
             />
-            <Button
-              type="button"
-              variant="outline"
-              className="h-9 w-9 shrink-0"
-              title="Find on Tesco (opens search)"
-              onClick={() =>
-                window.open(
-                  getTescoSearchUrl(name),
-                  "_blank",
-                  "noopener,noreferrer",
-                )
-              }
-              disabled={isLoading}
-            >
-              <ExternalLink className="size-4" />
-            </Button>
-            <Button
-              type="button"
-              variant="outline"
-              className="h-9 shrink-0"
-              title="Search on Google for Tesco link"
-              onClick={() =>
-                window.open(
-                  getGoogleSearchUrl(name),
-                  "_blank",
-                  "noopener,noreferrer",
-                )
-              }
-              disabled={isLoading}
-            >
-              Google
-            </Button>
+            <div className="flex shrink-0 gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                className="h-9 w-9 shrink-0 touch-manipulation"
+                title="Find on Tesco (opens search)"
+                onClick={() =>
+                  window.open(
+                    getTescoSearchUrl(name),
+                    "_blank",
+                    "noopener,noreferrer",
+                  )
+                }
+                disabled={isLoading}
+              >
+                <ExternalLink className="size-4" />
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                className="h-9 shrink-0 touch-manipulation"
+                title="Search on Google for Tesco link"
+                onClick={() =>
+                  window.open(
+                    getGoogleSearchUrl(name),
+                    "_blank",
+                    "noopener,noreferrer",
+                  )
+                }
+                disabled={isLoading}
+              >
+                Google
+              </Button>
+            </div>
           </div>
         </FormField>
         {error && <FormMessage>{error}</FormMessage>}

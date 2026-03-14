@@ -70,15 +70,15 @@ export function IngredientList({ refreshTrigger }: IngredientListProps) {
           {ingredients.map((ing) => (
             <li
               key={ing.id}
-              className="flex items-center justify-between gap-2 p-3 rounded-md border bg-card"
+              className="flex flex-col gap-2 rounded-md border bg-card p-3 sm:flex-row sm:items-center sm:justify-between sm:gap-2"
             >
-              <span className="font-medium">{ing.name}</span>
-              <div className="flex items-center gap-1">
+              <span className="min-w-0 truncate font-medium">{ing.name}</span>
+              <div className="flex flex-wrap items-center gap-1">
                 <Button
                   type="button"
                   variant="ghost"
                   size="sm"
-                  className="h-8 px-2 text-muted-foreground"
+                  className="h-9 min-h-9 shrink-0 touch-manipulation px-2 text-muted-foreground"
                   title="Find on Tesco"
                   onClick={() =>
                     window.open(
@@ -88,14 +88,14 @@ export function IngredientList({ refreshTrigger }: IngredientListProps) {
                     )
                   }
                 >
-                  <ExternalLink className="size-3.5 mr-1" />
+                  <ExternalLink className="mr-1 size-3.5" />
                   Find link
                 </Button>
                 <Button
                   type="button"
                   variant="ghost"
                   size="sm"
-                  className="h-8 px-2 text-muted-foreground"
+                  className="h-9 min-h-9 shrink-0 touch-manipulation px-2 text-muted-foreground"
                   title="Search Google for Tesco"
                   onClick={() =>
                     window.open(
@@ -112,7 +112,7 @@ export function IngredientList({ refreshTrigger }: IngredientListProps) {
                     href={ing.tescoUrl}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="text-sm text-primary hover:underline"
+                    className="py-2 text-sm text-primary hover:underline"
                   >
                     Tesco
                   </a>

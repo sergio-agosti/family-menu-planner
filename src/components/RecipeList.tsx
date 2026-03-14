@@ -94,10 +94,12 @@ export function RecipeList({
           {recipes.map((recipe) => (
             <li
               key={recipe.id}
-              className="flex items-center justify-between gap-2 p-3 rounded-md border bg-card"
+              className="flex flex-col gap-2 rounded-md border bg-card p-3 sm:flex-row sm:items-center sm:justify-between sm:gap-2"
             >
-              <span className="font-medium">{recipe.name}</span>
-              <div className="flex items-center gap-2">
+              <span className="min-w-0 truncate font-medium">
+                {recipe.name}
+              </span>
+              <div className="flex flex-wrap items-center gap-2">
                 {recipeIngredientCounts[recipe.id] != null && (
                   <span className="text-sm text-muted-foreground">
                     {recipeIngredientCounts[recipe.id]} ingredients
@@ -108,6 +110,7 @@ export function RecipeList({
                   variant="outline"
                   size="sm"
                   onClick={() => onSelectRecipe(recipe.id)}
+                  className="shrink-0 touch-manipulation"
                 >
                   View
                 </Button>

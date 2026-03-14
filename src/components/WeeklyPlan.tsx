@@ -182,130 +182,147 @@ export function WeeklyPlan({ refreshTrigger }: WeeklyPlanProps) {
 
   return (
     <Card>
-      <CardHeader className="flex flex-row items-center justify-between">
-        <CardTitle>2-week plan</CardTitle>
-        <div className="flex gap-2">
-          <Button type="button" variant="outline" size="sm" onClick={goPrev}>
+      <CardHeader className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <CardTitle className="text-lg sm:text-base">2-week plan</CardTitle>
+        <div className="flex shrink-0 gap-2">
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={goPrev}
+            className="text-xs sm:text-sm"
+          >
             Previous 2 weeks
           </Button>
-          <Button type="button" variant="outline" size="sm" onClick={goNext}>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={goNext}
+            className="text-xs sm:text-sm"
+          >
             Next 2 weeks
           </Button>
         </div>
       </CardHeader>
-      <CardContent className="p-0 overflow-hidden">
-        <div className="grid grid-cols-[8rem_1fr_1fr_1fr] gap-0 border-t bg-muted/50">
-          <div className="p-2 text-sm font-medium border-b border-r">Day</div>
-          {MEAL_TYPES.map(({ label }) => (
-            <div
-              key={label}
-              className="p-2 text-sm font-medium border-b border-r last:border-r-0"
-            >
-              {label}
+      <CardContent className="overflow-x-auto p-0">
+        <div className="min-w-[28rem]">
+          <div className="grid grid-cols-[7rem_1fr_1fr_1fr] gap-0 border-t bg-muted/50 backdrop-blur-md sm:grid-cols-[8rem_1fr_1fr_1fr]">
+            <div className="sticky left-0 z-10 border-r border-b bg-muted/70 p-1.5 text-xs font-medium backdrop-blur-md sm:p-2 sm:text-sm">
+              Day
             </div>
-          ))}
-        </div>
-        {days.map((d) => {
-          const dateKey = toDateKey(d);
-          const dayPlan = plan[dateKey] ?? {};
-          return (
-            <div
-              key={dateKey}
-              className="grid grid-cols-[8rem_1fr_1fr_1fr] gap-0 border-b last:border-b-0"
-            >
-              <div className="p-2 border-r text-sm font-medium">
-                {formatDay(d)}
+            {MEAL_TYPES.map(({ label }) => (
+              <div
+                key={label}
+                className="border-r border-b bg-muted/70 p-1.5 text-xs font-medium backdrop-blur-md last:border-r-0 sm:p-2 sm:text-sm"
+              >
+                {label}
               </div>
-              {MEAL_TYPES.map(({ key }) => {
-                const mealEntry = dayPlan[key] ?? {};
-                return (
-                  <div
-                    key={key}
-                    className="p-2 border-r last:border-r-0 flex flex-col gap-2 min-w-0"
-                  >
-                    {TARGETS.map(({ key: targetKey, label: targetLabel }) => {
-                      const ids = mealEntry[targetKey] ?? [];
-                      const isSaving =
-                        saving === `${dateKey}-${key}-${targetKey}`;
-                      return (
-                        <div key={targetKey} className="flex flex-col min-w-0">
-                          <div className="mb-1 flex items-center justify-between">
-                            <span className="text-xs font-semibold text-muted-foreground">
+            ))}
+          </div>
+          {days.map((d) => {
+            const dateKey = toDateKey(d);
+            const dayPlan = plan[dateKey] ?? {};
+            return (
+              <div
+                key={dateKey}
+                className="grid grid-cols-[7rem_1fr_1fr_1fr] gap-0 border-b last:border-b-0 sm:grid-cols-[8rem_1fr_1fr_1fr]"
+              >
+                <div className="sticky left-0 z-10 shrink-0 border-r bg-card/90 p-1.5 text-xs font-medium backdrop-blur-md sm:p-2 sm:text-sm">
+                  {formatDay(d)}
+                </div>
+                {MEAL_TYPES.map(({ key }) => {
+                  const mealEntry = dayPlan[key] ?? {};
+                  return (
+                    <div
+                      key={key}
+                      className="flex min-w-24 flex-col gap-1.5 border-r p-1.5 last:border-r-0 sm:gap-2 sm:p-2"
+                    >
+                      {TARGETS.map(({ key: targetKey, label: targetLabel }) => {
+                        const ids = mealEntry[targetKey] ?? [];
+                        const isSaving =
+                          saving === `${dateKey}-${key}-${targetKey}`;
+                        return (
+                          <div
+                            key={targetKey}
+                            className="flex min-w-0 flex-col"
+                          >
+                            <span className="mb-0.5 text-[10px] font-semibold text-muted-foreground sm:text-xs">
                               {targetLabel}
                             </span>
-                          </div>
-                          <div className="flex flex-wrap gap-1 mb-1">
-                            {[...ids]
-                              .sort((a, b) =>
-                                (recipeById[a]?.name ?? "").localeCompare(
-                                  recipeById[b]?.name ?? "",
-                                ),
-                              )
-                              .map((id) => {
-                                const r = recipeById[id];
-                                return (
-                                  <Badge
-                                    key={id}
-                                    variant="secondary"
-                                    className="pr-0.5 py-1 gap-1 font-normal"
-                                  >
-                                    <span className="truncate max-w-[8rem]">
-                                      {r?.name ?? id}
-                                    </span>
-                                    <Button
-                                      type="button"
-                                      variant="ghost"
-                                      size="sm"
-                                      className="h-4 w-4 p-0 rounded-full cursor-pointer text-muted-foreground hover:text-destructive hover:bg-muted shrink-0"
-                                      onClick={() =>
-                                        removeRecipeFromSlot(
-                                          dateKey,
-                                          key,
-                                          targetKey,
-                                          id,
-                                        )
-                                      }
-                                      disabled={isSaving}
+                            <div className="mb-1 flex flex-wrap gap-1">
+                              {[...ids]
+                                .sort((a, b) =>
+                                  (recipeById[a]?.name ?? "").localeCompare(
+                                    recipeById[b]?.name ?? "",
+                                  ),
+                                )
+                                .map((id) => {
+                                  const r = recipeById[id];
+                                  return (
+                                    <Badge
+                                      key={id}
+                                      variant="secondary"
+                                      className="max-w-full gap-1 py-1 pr-0.5 text-xs font-normal"
                                     >
-                                      ×
-                                    </Button>
-                                  </Badge>
-                                );
-                              })}
-                          </div>
-                          <Select
-                            key={`${dateKey}-${key}-${targetKey}-${ids.length}`}
-                            value="__add__"
-                            onValueChange={(v) => {
-                              if (v && v !== "__add__") {
-                                addRecipeToSlot(dateKey, key, targetKey, v);
-                              }
-                            }}
-                            disabled={isSaving || recipes.length === 0}
-                          >
-                            <SelectTrigger className="h-8 text-xs">
-                              <SelectValue placeholder="+ Add" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="__add__">
-                                + Add recipe
-                              </SelectItem>
-                              {sortedRecipes.map((r) => (
-                                <SelectItem key={r.id} value={r.id}>
-                                  {r.name}
+                                      <span className="max-w-24 truncate sm:max-w-32">
+                                        {r?.name ?? id}
+                                      </span>
+                                      <Button
+                                        type="button"
+                                        variant="ghost"
+                                        size="sm"
+                                        className="h-5 w-5 shrink-0 cursor-pointer touch-manipulation rounded-full p-0 text-muted-foreground hover:bg-muted hover:text-destructive sm:h-4 sm:w-4"
+                                        onClick={() =>
+                                          removeRecipeFromSlot(
+                                            dateKey,
+                                            key,
+                                            targetKey,
+                                            id,
+                                          )
+                                        }
+                                        disabled={isSaving}
+                                      >
+                                        ×
+                                      </Button>
+                                    </Badge>
+                                  );
+                                })}
+                            </div>
+                            <Select
+                              key={`${dateKey}-${key}-${targetKey}-${ids.length}`}
+                              value="__add__"
+                              onValueChange={(v) => {
+                                if (v && v !== "__add__") {
+                                  addRecipeToSlot(dateKey, key, targetKey, v);
+                                }
+                              }}
+                              disabled={isSaving || recipes.length === 0}
+                            >
+                              <SelectTrigger className="h-7 min-h-9 w-full min-w-[5.5rem] text-xs sm:h-8">
+                                <SelectValue placeholder="+ Add" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="__add__">
+                                  + Add recipe
                                 </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                        </div>
-                      );
-                    })}
-                  </div>
-                );
-              })}
-            </div>
-          );
-        })}
+                                {sortedRecipes.map((r) => (
+                                  <SelectItem key={r.id} value={r.id}>
+                                    {r.name}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  );
+                })}
+              </div>
+            );
+          })}
+        </div>
       </CardContent>
     </Card>
   );

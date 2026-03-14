@@ -74,15 +74,18 @@ export function RecipeDetail({
 
   return (
     <Card>
-      <CardHeader className="flex flex-row items-center justify-between">
-        <CardTitle>{recipe.name}</CardTitle>
-        <div className="flex gap-2">
+      <CardHeader className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <CardTitle className="min-w-0 truncate text-lg sm:text-base">
+          {recipe.name}
+        </CardTitle>
+        <div className="flex shrink-0 flex-wrap gap-2">
           {!isEditing ? (
             <Button
               type="button"
               variant="outline"
               size="sm"
               onClick={() => setIsEditing(true)}
+              className="touch-manipulation"
             >
               Edit ingredients
             </Button>
@@ -92,18 +95,25 @@ export function RecipeDetail({
               variant="outline"
               size="sm"
               onClick={() => setIsEditing(false)}
+              className="touch-manipulation"
             >
               Cancel
             </Button>
           )}
-          <Button type="button" variant="ghost" size="sm" onClick={onClose}>
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            onClick={onClose}
+            className="touch-manipulation"
+          >
             Close
           </Button>
         </div>
       </CardHeader>
       <CardContent className="space-y-4">
         <div>
-          <h4 className="text-sm font-medium mb-2">Ingredients</h4>
+          <h4 className="mb-2 text-sm font-medium">Ingredients</h4>
           {isEditing ? (
             <RecipeIngredientRows
               ingredients={ingredients}
@@ -118,7 +128,7 @@ export function RecipeDetail({
           ) : (
             <ul className="space-y-1">
               {recipeIngredients.length === 0 ? (
-                <li className="text-muted-foreground text-sm">
+                <li className="text-sm text-muted-foreground">
                   No ingredients yet.
                 </li>
               ) : (

@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { BookOpen, Carrot, CalendarDays } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { RecipeForm } from "@/components/RecipeForm";
 import { RecipeList } from "@/components/RecipeList";
@@ -29,9 +30,9 @@ function App() {
 
   return (
     <div className="min-h-screen bg-background">
-      <div className="container mx-auto max-w-4xl py-8 px-4">
-        <header className="mb-8">
-          <h1 className="text-4xl font-bold tracking-tight">
+      <div className="container mx-auto max-w-4xl min-w-0 px-3 py-4 sm:px-4 sm:py-8">
+        <header className="mb-4 sm:mb-8">
+          <h1 className="text-2xl font-bold tracking-tight sm:text-4xl">
             Family Menu Planner
           </h1>
         </header>
@@ -39,17 +40,43 @@ function App() {
         <Tabs
           value={activeTab}
           onValueChange={setActiveTab}
-          className="space-y-4"
+          className="min-w-0 space-y-4"
         >
-          <TabsList className="grid w-full grid-cols-3">
-            <TabsTrigger value="recipes">Recipes</TabsTrigger>
-            <TabsTrigger value="ingredients">Ingredients</TabsTrigger>
-            <TabsTrigger value="plan">Weekly plan</TabsTrigger>
+          <TabsList className="grid h-auto w-full min-w-0 grid-cols-3 gap-1 overflow-hidden p-1 sm:h-9">
+            <TabsTrigger
+              value="recipes"
+              className="flex min-w-0 items-center justify-center gap-1.5 overflow-hidden px-2 py-2 text-xs sm:px-2 sm:py-1 sm:text-sm"
+              title="Recipes"
+              aria-label="Recipes"
+            >
+              <BookOpen className="size-4 shrink-0" />
+              <span className="hidden sm:inline">Recipes</span>
+            </TabsTrigger>
+            <TabsTrigger
+              value="ingredients"
+              className="flex min-w-0 items-center justify-center gap-1.5 overflow-hidden px-2 py-2 text-xs sm:px-2 sm:py-1 sm:text-sm"
+              title="Ingredients"
+              aria-label="Ingredients"
+            >
+              <Carrot className="size-4 shrink-0" />
+              <span className="hidden sm:inline">Ingredients</span>
+            </TabsTrigger>
+            <TabsTrigger
+              value="plan"
+              className="flex min-w-0 items-center justify-center gap-1.5 overflow-hidden px-2 py-2 text-xs sm:px-2 sm:py-1 sm:text-sm"
+              title="Weekly plan"
+              aria-label="Weekly plan"
+            >
+              <CalendarDays className="size-4 shrink-0" />
+              <span className="hidden sm:inline">Weekly plan</span>
+            </TabsTrigger>
           </TabsList>
 
-          <TabsContent value="recipes" className="space-y-6">
-            <div className="rounded-lg border bg-card p-6 shadow-sm">
-              <h2 className="text-2xl font-semibold mb-4">Add New Recipe</h2>
+          <TabsContent value="recipes" className="space-y-4 sm:space-y-6">
+            <div className="rounded-lg border bg-card p-4 shadow-sm sm:p-6">
+              <h2 className="mb-4 text-xl font-semibold sm:text-2xl">
+                Add New Recipe
+              </h2>
               <RecipeForm onRecipeAdded={refresh} />
             </div>
             {selectedRecipeId ? (
@@ -66,15 +93,17 @@ function App() {
             )}
           </TabsContent>
 
-          <TabsContent value="ingredients" className="space-y-6">
-            <div className="rounded-lg border bg-card p-6 shadow-sm">
-              <h2 className="text-2xl font-semibold mb-4">Add Ingredient</h2>
+          <TabsContent value="ingredients" className="space-y-4 sm:space-y-6">
+            <div className="rounded-lg border bg-card p-4 shadow-sm sm:p-6">
+              <h2 className="mb-4 text-xl font-semibold sm:text-2xl">
+                Add Ingredient
+              </h2>
               <IngredientForm onIngredientAdded={refresh} />
             </div>
             <IngredientList refreshTrigger={refreshTrigger} />
           </TabsContent>
 
-          <TabsContent value="plan" className="space-y-6">
+          <TabsContent value="plan" className="space-y-4 sm:space-y-6">
             <WeeklyPlan refreshTrigger={refreshTrigger} />
           </TabsContent>
         </Tabs>

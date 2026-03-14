@@ -78,14 +78,17 @@ export function RecipeIngredientRows({
   return (
     <div className="space-y-3">
       {rows.map((row, index) => (
-        <div key={index} className="flex gap-2 items-center">
+        <div
+          key={index}
+          className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-2"
+        >
           <Select
             value={row.ingredientId || "__none__"}
             onValueChange={(v) =>
               updateRow(index, "ingredientId", v === "__none__" ? "" : v)
             }
           >
-            <SelectTrigger className="w-[200px]">
+            <SelectTrigger className="w-full min-w-0 sm:w-[200px]">
               <SelectValue placeholder="Ingredient" />
             </SelectTrigger>
             <SelectContent>
@@ -97,21 +100,24 @@ export function RecipeIngredientRows({
               ))}
             </SelectContent>
           </Select>
-          <Input
-            placeholder="Quantity"
-            value={row.quantity}
-            onChange={(e) => updateRow(index, "quantity", e.target.value)}
-            className="w-[120px]"
-          />
-          <Button
-            type="button"
-            variant="ghost"
-            size="sm"
-            onClick={() => removeRow(index)}
-            disabled={rows.length <= 1}
-          >
-            Remove
-          </Button>
+          <div className="flex items-center gap-2">
+            <Input
+              placeholder="Quantity"
+              value={row.quantity}
+              onChange={(e) => updateRow(index, "quantity", e.target.value)}
+              className="w-full min-w-0 flex-1 sm:w-[120px] sm:flex-none"
+            />
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              onClick={() => removeRow(index)}
+              disabled={rows.length <= 1}
+              className="shrink-0 touch-manipulation"
+            >
+              Remove
+            </Button>
+          </div>
         </div>
       ))}
       <div className="flex flex-wrap gap-2">
