@@ -1,5 +1,5 @@
-import { useState, useEffect, useMemo } from "react";
-import { Plus } from "lucide-react";
+import { useState, useEffect, useMemo, useCallback } from "react";
+import { Plus, ChevronDown, ChevronRight } from "lucide-react";
 import { RemovablePill } from "@/components/RemovablePill";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -20,11 +20,28 @@ import {
   type TargetType,
 } from "@/lib/data";
 
+const MEAL_COLUMNS_STORAGE_KEY = "family-menu-planner:meal-columns-collapsed";
+
 const MEAL_TYPES: { key: MealType; label: string }[] = [
   { key: "breakfast", label: "Breakfast" },
   { key: "lunch", label: "Lunch" },
   { key: "dinner", label: "Dinner" },
 ];
+
+function loadCollapsedColumns(): Record<MealType, boolean> {
+  try {
+    const raw = localStorage.getItem(MEAL_COLUMNS_STORAGE_KEY);
+    if (!raw) return { breakfast: false, lunch: false, dinner: false };
+    const parsed = JSON.parse(raw) as Partial<Record<MealType, boolean>>;
+    return {
+      breakfast: Boolean(parsed.breakfast),
+      lunch: Boolean(parsed.lunch),
+      dinner: Boolean(parsed.dinner),
+    };
+  } catch {
+    return { breakfast: false, lunch: false, dinner: false };
+  }
+}
 
 const TARGETS: { key: TargetType; label: string }[] = [
   { key: "adults", label: "Adults" },
@@ -62,6 +79,20 @@ export function WeeklyPlan({ refreshTrigger }: WeeklyPlanProps) {
   const [weekStart, setWeekStart] = useState<Date>(() => getMonday(new Date()));
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState<string | null>(null);
+  const [collapsedColumns, setCollapsedColumns] =
+    useState<Record<MealType, boolean>>(loadCollapsedColumns);
+
+  const toggleColumn = useCallback((mealType: MealType) => {
+    setCollapsedColumns((prev) => {
+      const next = { ...prev, [mealType]: !prev[mealType] };
+      try {
+        localStorage.setItem(MEAL_COLUMNS_STORAGE_KEY, JSON.stringify(next));
+      } catch {
+        /* ignore */
+      }
+      return next;
+    });
+  }, []);
 
   const days = useMemo(() => {
     const out: Date[] = [];
@@ -159,6 +190,12 @@ export function WeeklyPlan({ refreshTrigger }: WeeklyPlanProps) {
     [recipes],
   );
 
+  const gridCols = useMemo(
+    () =>
+      `7rem ${MEAL_TYPES.map(({ key }) => (collapsedColumns[key] ? "2.5rem" : "1fr")).join(" ")}`,
+    [collapsedColumns],
+  );
+
   const goPrev = () => {
     const d = new Date(weekStart);
     d.setDate(d.getDate() - 14);
@@ -208,18 +245,53 @@ export function WeeklyPlan({ refreshTrigger }: WeeklyPlanProps) {
       </CardHeader>
       <CardContent className="overflow-x-auto rounded-b-xl p-0 !px-0 !pb-0">
         <div className="min-w-[28rem]">
-          <div className="grid grid-cols-[7rem_1fr_1fr_1fr] gap-0 border-t bg-muted/50 backdrop-blur-md sm:grid-cols-[8rem_1fr_1fr_1fr]">
+          <div
+            className="grid gap-0 border-t bg-muted/50 backdrop-blur-md"
+            style={{ gridTemplateColumns: gridCols }}
+          >
             <div className="sticky left-0 z-10 border-r border-b bg-muted/70 p-1.5 text-xs font-medium backdrop-blur-md sm:p-2 sm:text-sm">
               Day
             </div>
-            {MEAL_TYPES.map(({ label }) => (
-              <div
-                key={label}
-                className="border-r border-b bg-muted/70 p-1.5 text-xs font-medium backdrop-blur-md last:border-r-0 sm:p-2 sm:text-sm"
-              >
-                {label}
-              </div>
-            ))}
+            {MEAL_TYPES.map(({ key, label }) => {
+              const collapsed = collapsedColumns[key];
+              return (
+                <div
+                  key={key}
+                  className={`flex min-w-0 items-center border-r border-b bg-muted/70 backdrop-blur-md last:border-r-0 ${collapsed ? "justify-center" : ""}`}
+                >
+                  {collapsed ? (
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      className="h-7 w-7 shrink-0"
+                      onClick={() => toggleColumn(key)}
+                      title={`Show ${label}`}
+                      aria-label={`Expand ${label} column`}
+                    >
+                      <ChevronRight className="size-4" />
+                    </Button>
+                  ) : (
+                    <div className="flex w-full items-center justify-between gap-1 p-1.5 sm:p-2">
+                      <span className="truncate text-xs font-medium sm:text-sm">
+                        {label}
+                      </span>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        className="h-6 w-6 shrink-0"
+                        onClick={() => toggleColumn(key)}
+                        title={`Hide ${label}`}
+                        aria-label={`Collapse ${label} column`}
+                      >
+                        <ChevronDown className="size-4" />
+                      </Button>
+                    </div>
+                  )}
+                </div>
+              );
+            })}
           </div>
           {days.map((d) => {
             const dateKey = toDateKey(d);
@@ -227,12 +299,34 @@ export function WeeklyPlan({ refreshTrigger }: WeeklyPlanProps) {
             return (
               <div
                 key={dateKey}
-                className="grid grid-cols-[7rem_1fr_1fr_1fr] gap-0 border-b last:border-b-0 sm:grid-cols-[8rem_1fr_1fr_1fr]"
+                className="grid gap-0 border-b last:border-b-0"
+                style={{ gridTemplateColumns: gridCols }}
               >
                 <div className="sticky left-0 z-10 shrink-0 border-r bg-card/90 p-1.5 text-xs font-medium backdrop-blur-md sm:p-2 sm:text-sm">
                   {formatDay(d)}
                 </div>
-                {MEAL_TYPES.map(({ key }) => {
+                {MEAL_TYPES.map(({ key, label }) => {
+                  const collapsed = collapsedColumns[key];
+                  if (collapsed) {
+                    return (
+                      <div
+                        key={key}
+                        className="flex min-w-0 items-center justify-center border-r bg-card/90 last:border-r-0"
+                      >
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          className="h-7 w-7 shrink-0"
+                          onClick={() => toggleColumn(key)}
+                          title={`Show ${label}`}
+                          aria-label={`Expand ${label} column`}
+                        >
+                          <ChevronRight className="size-4" />
+                        </Button>
+                      </div>
+                    );
+                  }
                   const mealEntry = dayPlan[key] ?? {};
                   return (
                     <div
@@ -249,7 +343,7 @@ export function WeeklyPlan({ refreshTrigger }: WeeklyPlanProps) {
                             className="flex min-w-0 flex-col"
                           >
                             <div className="mb-0.5 flex items-center justify-between gap-1">
-                              <span className="text-[10px] font-semibold text-muted-foreground sm:text-xs">
+                              <span className="font-semibold text-muted-foreground sm:text-xs">
                                 {targetLabel}
                               </span>
                               <Select
@@ -264,13 +358,13 @@ export function WeeklyPlan({ refreshTrigger }: WeeklyPlanProps) {
                               >
                                 <SelectTrigger
                                   size="sm"
-                                  className="h-6 w-6 shrink-0 border-0 p-0 shadow-none [&>svg]:size-3.5 [&>svg:last-of-type]:hidden"
+                                  className="h-6 w-6 shrink-0 justify-center gap-0 border-0 p-0 shadow-none [&>*:last-child]:w-0 [&>*:last-child]:min-w-0 [&>*:last-child]:overflow-hidden [&>svg]:size-3.5 [&>svg:last-of-type]:hidden"
                                   aria-label={`Add recipe to ${targetLabel}`}
                                 >
                                   <Plus />
                                   <SelectValue
                                     className="sr-only"
-                                    placeholder="Add"
+                                    placeholder=""
                                   />
                                 </SelectTrigger>
                                 <SelectContent>
@@ -278,7 +372,7 @@ export function WeeklyPlan({ refreshTrigger }: WeeklyPlanProps) {
                                     value="__add__"
                                     className="hidden"
                                   >
-                                    Add
+                                    {"\u200b"}
                                   </SelectItem>
                                   {sortedRecipes.map((r) => (
                                     <SelectItem key={r.id} value={r.id}>
