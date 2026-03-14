@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from "react";
+import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import {
@@ -152,6 +153,11 @@ export function WeeklyPlan({ refreshTrigger }: WeeklyPlanProps) {
     [recipes],
   );
 
+  const sortedRecipes = useMemo(
+    () => [...recipes].sort((a, b) => a.name.localeCompare(b.name)),
+    [recipes],
+  );
+
   const goPrev = () => {
     const d = new Date(weekStart);
     d.setDate(d.getDate() - 14);
@@ -187,67 +193,70 @@ export function WeeklyPlan({ refreshTrigger }: WeeklyPlanProps) {
           </Button>
         </div>
       </CardHeader>
-      <CardContent>
-        <div className="border rounded-lg overflow-hidden">
-          <div className="grid grid-cols-[8rem_1fr_1fr_1fr] gap-0 bg-muted/50">
-            <div className="p-2 text-sm font-medium border-b border-r">Day</div>
-            {MEAL_TYPES.map(({ label }) => (
-              <div
-                key={label}
-                className="p-2 text-sm font-medium border-b border-r last:border-r-0"
-              >
-                {label}
+      <CardContent className="p-0 overflow-hidden">
+        <div className="grid grid-cols-[8rem_1fr_1fr_1fr] gap-0 border-t bg-muted/50">
+          <div className="p-2 text-sm font-medium border-b border-r">Day</div>
+          {MEAL_TYPES.map(({ label }) => (
+            <div
+              key={label}
+              className="p-2 text-sm font-medium border-b border-r last:border-r-0"
+            >
+              {label}
+            </div>
+          ))}
+        </div>
+        {days.map((d) => {
+          const dateKey = toDateKey(d);
+          const dayPlan = plan[dateKey] ?? {};
+          return (
+            <div
+              key={dateKey}
+              className="grid grid-cols-[8rem_1fr_1fr_1fr] gap-0 border-b last:border-b-0"
+            >
+              <div className="p-2 border-r text-sm font-medium">
+                {formatDay(d)}
               </div>
-            ))}
-          </div>
-          {days.map((d) => {
-            const dateKey = toDateKey(d);
-            const dayPlan = plan[dateKey] ?? {};
-            return (
-              <div
-                key={dateKey}
-                className="grid grid-cols-[8rem_1fr_1fr_1fr] gap-0 border-b last:border-b-0"
-              >
-                <div className="p-2 border-r text-sm font-medium">
-                  {formatDay(d)}
-                </div>
-                {MEAL_TYPES.map(({ key }) => {
-                  const mealEntry = dayPlan[key] ?? {};
-                  return (
-                    <div
-                      key={key}
-                      className="p-2 border-r last:border-r-0 flex flex-col gap-2 min-w-0"
-                    >
-                      {TARGETS.map(({ key: targetKey, label: targetLabel }) => {
-                        const ids = mealEntry[targetKey] ?? [];
-                        const isSaving =
-                          saving === `${dateKey}-${key}-${targetKey}`;
-                        return (
-                          <div
-                            key={targetKey}
-                            className="flex flex-col min-w-0"
-                          >
-                            <div className="mb-1 flex items-center justify-between">
-                              <span className="text-xs font-semibold text-muted-foreground">
-                                {targetLabel}
-                              </span>
-                            </div>
-                            <ul className="text-sm space-y-0.5 mb-1">
-                              {ids.map((id) => {
+              {MEAL_TYPES.map(({ key }) => {
+                const mealEntry = dayPlan[key] ?? {};
+                return (
+                  <div
+                    key={key}
+                    className="p-2 border-r last:border-r-0 flex flex-col gap-2 min-w-0"
+                  >
+                    {TARGETS.map(({ key: targetKey, label: targetLabel }) => {
+                      const ids = mealEntry[targetKey] ?? [];
+                      const isSaving =
+                        saving === `${dateKey}-${key}-${targetKey}`;
+                      return (
+                        <div key={targetKey} className="flex flex-col min-w-0">
+                          <div className="mb-1 flex items-center justify-between">
+                            <span className="text-xs font-semibold text-muted-foreground">
+                              {targetLabel}
+                            </span>
+                          </div>
+                          <div className="flex flex-wrap gap-1 mb-1">
+                            {[...ids]
+                              .sort((a, b) =>
+                                (recipeById[a]?.name ?? "").localeCompare(
+                                  recipeById[b]?.name ?? "",
+                                ),
+                              )
+                              .map((id) => {
                                 const r = recipeById[id];
                                 return (
-                                  <li
+                                  <Badge
                                     key={id}
-                                    className="flex items-center justify-between gap-1"
+                                    variant="secondary"
+                                    className="pr-0.5 py-1 gap-1 font-normal"
                                   >
-                                    <span className="truncate">
+                                    <span className="truncate max-w-[8rem]">
                                       {r?.name ?? id}
                                     </span>
                                     <Button
                                       type="button"
                                       variant="ghost"
                                       size="sm"
-                                      className="h-5 px-1 text-muted-foreground hover:text-destructive shrink-0"
+                                      className="h-4 w-4 p-0 rounded-full cursor-pointer text-muted-foreground hover:text-destructive hover:bg-muted shrink-0"
                                       onClick={() =>
                                         removeRecipeFromSlot(
                                           dateKey,
@@ -260,44 +269,43 @@ export function WeeklyPlan({ refreshTrigger }: WeeklyPlanProps) {
                                     >
                                       ×
                                     </Button>
-                                  </li>
+                                  </Badge>
                                 );
                               })}
-                            </ul>
-                            <Select
-                              key={`${dateKey}-${key}-${targetKey}-${ids.length}`}
-                              value="__add__"
-                              onValueChange={(v) => {
-                                if (v && v !== "__add__") {
-                                  addRecipeToSlot(dateKey, key, targetKey, v);
-                                }
-                              }}
-                              disabled={isSaving || recipes.length === 0}
-                            >
-                              <SelectTrigger className="h-8 text-xs">
-                                <SelectValue placeholder="+ Add" />
-                              </SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="__add__">
-                                  + Add recipe
-                                </SelectItem>
-                                {recipes.map((r) => (
-                                  <SelectItem key={r.id} value={r.id}>
-                                    {r.name}
-                                  </SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
                           </div>
-                        );
-                      })}
-                    </div>
-                  );
-                })}
-              </div>
-            );
-          })}
-        </div>
+                          <Select
+                            key={`${dateKey}-${key}-${targetKey}-${ids.length}`}
+                            value="__add__"
+                            onValueChange={(v) => {
+                              if (v && v !== "__add__") {
+                                addRecipeToSlot(dateKey, key, targetKey, v);
+                              }
+                            }}
+                            disabled={isSaving || recipes.length === 0}
+                          >
+                            <SelectTrigger className="h-8 text-xs">
+                              <SelectValue placeholder="+ Add" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="__add__">
+                                + Add recipe
+                              </SelectItem>
+                              {sortedRecipes.map((r) => (
+                                <SelectItem key={r.id} value={r.id}>
+                                  {r.name}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      );
+                    })}
+                  </div>
+                );
+              })}
+            </div>
+          );
+        })}
       </CardContent>
     </Card>
   );

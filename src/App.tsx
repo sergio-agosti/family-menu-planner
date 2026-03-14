@@ -34,9 +34,6 @@ function App() {
           <h1 className="text-4xl font-bold tracking-tight">
             Family Menu Planner
           </h1>
-          <p className="text-muted-foreground mt-2">
-            Recipes, ingredients, and weekly planning
-          </p>
         </header>
 
         <Tabs
