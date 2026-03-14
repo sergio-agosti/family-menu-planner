@@ -30,9 +30,7 @@ function App() {
 
   return (
     <div className="min-h-screen bg-background">
-      <div
-        className={`container mx-auto max-w-4xl min-w-0 py-4 sm:py-8 ${activeTab === "plan" ? "px-0" : "px-3 sm:px-4"}`}
-      >
+      <div className="container mx-auto max-w-4xl min-w-0 px-3 py-4 sm:px-4 sm:py-8">
         <header className="mb-4 sm:mb-8">
           <h1 className="text-2xl font-bold tracking-tight sm:text-4xl">
             Family Menu Planner
