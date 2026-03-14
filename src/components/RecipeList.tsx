@@ -13,9 +13,6 @@ export function RecipeList({
   onSelectRecipe,
 }: RecipeListProps) {
   const [recipes, setRecipes] = useState<Recipe[]>([]);
-  const [recipeIngredientCounts, setRecipeIngredientCounts] = useState<
-    Record<string, number>
-  >({});
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
 
@@ -23,18 +20,12 @@ export function RecipeList({
     let cancelled = false;
     setError("");
     setRecipes([]);
-    setRecipeIngredientCounts({});
     getData()
       .then((data) => {
         if (cancelled) return;
         setRecipes(
           [...data.recipes].sort((a, b) => a.name.localeCompare(b.name)),
         );
-        const counts: Record<string, number> = {};
-        for (const ri of data.recipeIngredients) {
-          counts[ri.recipeId] = (counts[ri.recipeId] ?? 0) + 1;
-        }
-        setRecipeIngredientCounts(counts);
       })
       .catch((err) => {
         if (!cancelled) {
@@ -102,11 +93,6 @@ export function RecipeList({
                 {recipe.name}
               </span>
               <div className="flex flex-wrap items-center gap-2">
-                {recipeIngredientCounts[recipe.id] != null && (
-                  <span className="text-sm text-muted-foreground">
-                    {recipeIngredientCounts[recipe.id]} ingredients
-                  </span>
-                )}
                 <Button
                   type="button"
                   variant="outline"

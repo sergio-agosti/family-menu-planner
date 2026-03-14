@@ -1,6 +1,12 @@
 import { useState, useEffect } from "react";
 import { BookOpen, Carrot, CalendarDays } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { RecipeForm } from "@/components/RecipeForm";
 import { RecipeList } from "@/components/RecipeList";
 import { RecipeDetail } from "@/components/RecipeDetail";
@@ -9,6 +15,7 @@ import { IngredientList } from "@/components/IngredientList";
 import { WeeklyPlan } from "@/components/WeeklyPlan";
 
 const TAB_STORAGE_KEY = "family-menu-planner-tab";
+const RECIPE_STORAGE_KEY = "family-menu-planner-selected-recipe";
 const VALID_TABS = ["recipes", "ingredients", "plan"];
 
 function getStoredTab(): string {
@@ -17,14 +24,30 @@ function getStoredTab(): string {
   return stored && VALID_TABS.includes(stored) ? stored : "recipes";
 }
 
+function getStoredRecipeId(): string | null {
+  if (typeof window === "undefined") return null;
+  const stored = localStorage.getItem(RECIPE_STORAGE_KEY);
+  return stored?.trim() ?? null;
+}
+
 function App() {
   const [activeTab, setActiveTab] = useState(getStoredTab);
   const [refreshTrigger, setRefreshTrigger] = useState(0);
-  const [selectedRecipeId, setSelectedRecipeId] = useState<string | null>(null);
+  const [selectedRecipeId, setSelectedRecipeId] = useState<string | null>(
+    getStoredRecipeId,
+  );
 
   useEffect(() => {
     localStorage.setItem(TAB_STORAGE_KEY, activeTab);
   }, [activeTab]);
+
+  useEffect(() => {
+    if (selectedRecipeId) {
+      localStorage.setItem(RECIPE_STORAGE_KEY, selectedRecipeId);
+    } else {
+      localStorage.removeItem(RECIPE_STORAGE_KEY);
+    }
+  }, [selectedRecipeId]);
 
   const refresh = () => setRefreshTrigger((prev) => prev + 1);
 
@@ -79,18 +102,31 @@ function App() {
               </h2>
               <RecipeForm onRecipeAdded={refresh} />
             </div>
-            {selectedRecipeId ? (
-              <RecipeDetail
-                recipeId={selectedRecipeId}
-                onClose={() => setSelectedRecipeId(null)}
-                onUpdated={refresh}
-              />
-            ) : (
-              <RecipeList
-                refreshTrigger={refreshTrigger}
-                onSelectRecipe={setSelectedRecipeId}
-              />
-            )}
+            <RecipeList
+              refreshTrigger={refreshTrigger}
+              onSelectRecipe={setSelectedRecipeId}
+            />
+            <Dialog
+              open={!!selectedRecipeId}
+              onOpenChange={(open) => !open && setSelectedRecipeId(null)}
+            >
+              <DialogContent
+                className="max-h-[90vh] max-w-2xl overflow-y-auto rounded-none border-0 bg-transparent p-0 shadow-none"
+                showCloseButton={false}
+              >
+                <DialogTitle className="sr-only">Recipe</DialogTitle>
+                <DialogDescription className="sr-only">
+                  Recipe ingredients and details
+                </DialogDescription>
+                {selectedRecipeId && (
+                  <RecipeDetail
+                    recipeId={selectedRecipeId}
+                    onClose={() => setSelectedRecipeId(null)}
+                    onUpdated={refresh}
+                  />
+                )}
+              </DialogContent>
+            </Dialog>
           </TabsContent>
 
           <TabsContent value="ingredients" className="space-y-4 sm:space-y-6">

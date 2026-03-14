@@ -2,8 +2,8 @@ import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { getData, type Ingredient } from "@/lib/data";
-import { getTescoSearchUrl, getGoogleSearchUrl } from "@/lib/utils";
-import { ExternalLink } from "lucide-react";
+import { getTescoSearchUrl } from "@/lib/utils";
+import { ExternalLink, Search } from "lucide-react";
 
 interface IngredientListProps {
   refreshTrigger: number;
@@ -77,12 +77,23 @@ export function IngredientList({ refreshTrigger }: IngredientListProps) {
               className="flex flex-col gap-2 rounded-md border bg-card p-3 sm:flex-row sm:items-center sm:justify-between sm:gap-2"
             >
               <span className="min-w-0 truncate font-medium">{ing.name}</span>
-              <div className="flex flex-wrap items-center gap-1">
+              <div className="flex flex-wrap items-center justify-end gap-2">
+                {ing.tescoUrl ? (
+                  <a
+                    href={ing.tescoUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground"
+                    title="Open Tesco product (new tab)"
+                  >
+                    <ExternalLink className="size-4" />
+                  </a>
+                ) : null}
                 <Button
                   type="button"
                   variant="ghost"
                   size="sm"
-                  className="h-9 min-h-9 shrink-0 touch-manipulation px-2 text-muted-foreground"
+                  className="h-9 w-9 shrink-0 touch-manipulation p-0 text-muted-foreground"
                   title="Find on Tesco"
                   onClick={() =>
                     window.open(
@@ -92,35 +103,8 @@ export function IngredientList({ refreshTrigger }: IngredientListProps) {
                     )
                   }
                 >
-                  <ExternalLink className="mr-1 size-3.5" />
-                  Find link
+                  <Search className="size-4" />
                 </Button>
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  className="h-9 min-h-9 shrink-0 touch-manipulation px-2 text-muted-foreground"
-                  title="Search Google for Tesco"
-                  onClick={() =>
-                    window.open(
-                      getGoogleSearchUrl(ing.name),
-                      "_blank",
-                      "noopener,noreferrer",
-                    )
-                  }
-                >
-                  Google
-                </Button>
-                {ing.tescoUrl ? (
-                  <a
-                    href={ing.tescoUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="py-2 text-sm text-primary hover:underline"
-                  >
-                    Tesco
-                  </a>
-                ) : null}
               </div>
             </li>
           ))}

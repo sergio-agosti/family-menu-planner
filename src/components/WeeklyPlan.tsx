@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from "react";
-import { Badge } from "@/components/ui/badge";
+import { RemovablePill } from "@/components/RemovablePill";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import {
@@ -260,32 +260,21 @@ export function WeeklyPlan({ refreshTrigger }: WeeklyPlanProps) {
                                 .map((id) => {
                                   const r = recipeById[id];
                                   return (
-                                    <Badge
+                                    <RemovablePill
                                       key={id}
-                                      variant="secondary"
-                                      className="max-w-full gap-1 py-1 pr-0.5 text-xs font-normal"
-                                    >
-                                      <span className="max-w-24 truncate sm:max-w-32">
-                                        {r?.name ?? id}
-                                      </span>
-                                      <Button
-                                        type="button"
-                                        variant="ghost"
-                                        size="sm"
-                                        className="h-5 w-5 shrink-0 cursor-pointer touch-manipulation rounded-full p-0 text-muted-foreground hover:bg-muted hover:text-destructive sm:h-4 sm:w-4"
-                                        onClick={() =>
-                                          removeRecipeFromSlot(
-                                            dateKey,
-                                            key,
-                                            targetKey,
-                                            id,
-                                          )
-                                        }
-                                        disabled={isSaving}
-                                      >
-                                        ×
-                                      </Button>
-                                    </Badge>
+                                      label={r?.name ?? id}
+                                      onRemove={() =>
+                                        removeRecipeFromSlot(
+                                          dateKey,
+                                          key,
+                                          targetKey,
+                                          id,
+                                        )
+                                      }
+                                      disabled={isSaving}
+                                      removeTitle="Remove recipe"
+                                      className="max-w-full"
+                                    />
                                   );
                                 })}
                             </div>
