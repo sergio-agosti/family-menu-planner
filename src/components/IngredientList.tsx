@@ -16,7 +16,11 @@ export function IngredientList({ refreshTrigger }: IngredientListProps) {
 
   useEffect(() => {
     getData()
-      .then((data) => setIngredients(data.ingredients))
+      .then((data) =>
+        setIngredients(
+          [...data.ingredients].sort((a, b) => a.name.localeCompare(b.name)),
+        ),
+      )
       .catch((err) =>
         setError(
           err instanceof Error ? err.message : "Failed to load ingredients",

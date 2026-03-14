@@ -27,7 +27,9 @@ export function RecipeList({
     getData()
       .then((data) => {
         if (cancelled) return;
-        setRecipes(data.recipes);
+        setRecipes(
+          [...data.recipes].sort((a, b) => a.name.localeCompare(b.name)),
+        );
         const counts: Record<string, number> = {};
         for (const ri of data.recipeIngredients) {
           counts[ri.recipeId] = (counts[ri.recipeId] ?? 0) + 1;
