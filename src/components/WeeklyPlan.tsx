@@ -182,7 +182,7 @@ export function WeeklyPlan({ refreshTrigger }: WeeklyPlanProps) {
 
   return (
     <Card>
-      <CardHeader className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+      <CardHeader className="flex flex-col gap-3 px-3 sm:flex-row sm:items-center sm:justify-between sm:px-6">
         <CardTitle className="text-lg sm:text-base">2-week plan</CardTitle>
         <div className="flex shrink-0 gap-2">
           <Button
@@ -205,7 +205,7 @@ export function WeeklyPlan({ refreshTrigger }: WeeklyPlanProps) {
           </Button>
         </div>
       </CardHeader>
-      <CardContent className="overflow-x-auto p-0">
+      <CardContent className="overflow-x-auto rounded-b-xl p-0 !px-0 !pb-0">
         <div className="min-w-[28rem]">
           <div className="grid grid-cols-[7rem_1fr_1fr_1fr] gap-0 border-t bg-muted/50 backdrop-blur-md sm:grid-cols-[8rem_1fr_1fr_1fr]">
             <div className="sticky left-0 z-10 border-r border-b bg-muted/70 p-1.5 text-xs font-medium backdrop-blur-md sm:p-2 sm:text-sm">
