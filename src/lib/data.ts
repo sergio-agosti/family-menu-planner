@@ -43,6 +43,17 @@ function ensureSupabase(): NonNullable<typeof supabase> {
   return supabase;
 }
 
+async function getCurrentUserId(): Promise<string> {
+  const client = ensureSupabase();
+  const {
+    data: { user },
+    error,
+  } = await client.auth.getUser();
+  if (error) throw new Error(error.message);
+  if (!user) throw new Error("Not authenticated");
+  return user.id;
+}
+
 function mapRecipe(row: {
   id: string;
   name: string;
@@ -155,9 +166,10 @@ export async function getRecipes(): Promise<{ recipes: Recipe[] }> {
 
 export async function addRecipe(name: string): Promise<Recipe> {
   const client = ensureSupabase();
+  const userId = await getCurrentUserId();
   const { data, error } = await client
     .from("recipes")
-    .insert({ id: crypto.randomUUID(), name })
+    .insert({ id: crypto.randomUUID(), name, user_id: userId })
     .select("id, name, created_at")
     .single();
 
@@ -196,6 +208,7 @@ export async function addIngredient(
   tescoUrl: string,
 ): Promise<Ingredient> {
   const client = ensureSupabase();
+  const userId = await getCurrentUserId();
   const url = tescoUrl.trim();
   const { data, error } = await client
     .from("ingredients")
@@ -203,6 +216,7 @@ export async function addIngredient(
       id: crypto.randomUUID(),
       name,
       tesco_url: url ? url : null,
+      user_id: userId,
     })
     .select("id, name, tesco_url")
     .single();
@@ -294,11 +308,13 @@ export async function setSlotRecipes(
 
   if (!recipeIds.length) return;
 
+  const userId = await getCurrentUserId();
   const rows = recipeIds.map((recipeId) => ({
     happening_at: dateKey,
     meal: mealType,
     target,
     recipe_id: recipeId,
+    user_id: userId,
   }));
 
   const { error } = await client.from("plans").insert(rows);
@@ -341,6 +357,8 @@ export async function setDayPlan(
 
   if (!rows.length) return;
 
-  const { error } = await client.from("plans").insert(rows);
+  const userId = await getCurrentUserId();
+  const rowsWithUser = rows.map((row) => ({ ...row, user_id: userId }));
+  const { error } = await client.from("plans").insert(rowsWithUser);
   if (error) throw new Error(error.message);
 }

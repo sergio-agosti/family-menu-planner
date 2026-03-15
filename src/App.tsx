@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { BookOpen, Carrot, CalendarDays } from "lucide-react";
+import { BookOpen, Carrot, CalendarDays, LogOut } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Dialog,
@@ -7,12 +7,15 @@ import {
   DialogDescription,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
 import { RecipeForm } from "@/components/RecipeForm";
 import { RecipeList } from "@/components/RecipeList";
 import { RecipeDetail } from "@/components/RecipeDetail";
 import { IngredientForm } from "@/components/IngredientForm";
 import { IngredientList } from "@/components/IngredientList";
 import { WeeklyPlan } from "@/components/WeeklyPlan";
+import { AuthProvider, useAuth } from "@/contexts/AuthContext";
+import { AuthScreen } from "@/components/AuthScreen";
 
 const TAB_STORAGE_KEY = "family-menu-planner-tab";
 const RECIPE_STORAGE_KEY = "family-menu-planner-selected-recipe";
@@ -30,7 +33,8 @@ function getStoredRecipeId(): string | null {
   return stored?.trim() ?? null;
 }
 
-function App() {
+function AppContent() {
+  const { user, loading, signOut } = useAuth();
   const [activeTab, setActiveTab] = useState(getStoredTab);
   const [refreshTrigger, setRefreshTrigger] = useState(0);
   const [selectedRecipeId, setSelectedRecipeId] = useState<string | null>(
@@ -51,13 +55,40 @@ function App() {
 
   const refresh = () => setRefreshTrigger((prev) => prev + 1);
 
+  if (loading) {
+    return (
+      <div className="flex min-h-screen items-center justify-center">
+        <p className="text-muted-foreground">Loading…</p>
+      </div>
+    );
+  }
+  if (!user) {
+    return <AuthScreen />;
+  }
+
   return (
     <div className="min-h-screen bg-background">
       <div className="container mx-auto max-w-4xl min-w-0 px-3 py-4 sm:px-4 sm:py-8">
-        <header className="mb-4 sm:mb-8">
+        <header className="mb-4 flex flex-wrap items-center justify-between gap-2 sm:mb-8">
           <h1 className="text-2xl font-bold tracking-tight sm:text-4xl">
             Family Menu Planner
           </h1>
+          <div className="flex items-center gap-2">
+            <span
+              className="text-sm text-muted-foreground"
+              title={user.email ?? undefined}
+            >
+              {user.email}
+            </span>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => signOut()}
+              aria-label="Sign out"
+            >
+              <LogOut className="size-4" />
+            </Button>
+          </div>
         </header>
 
         <Tabs
@@ -158,4 +189,10 @@ function App() {
   );
 }
 
-export default App;
+export default function App() {
+  return (
+    <AuthProvider>
+      <AppContent />
+    </AuthProvider>
+  );
+}
