@@ -273,8 +273,7 @@ export function RecipeDetail({
                     onClick={() => handleCreateIngredient(addIngredientSearch)}
                   >
                     <Plus className="size-4 shrink-0" />
-                    Add &quot;{addIngredientSearch.trim()}&quot; as new
-                    ingredient
+                    Add as new ingredient
                   </Button>
                 </div>
               )}
