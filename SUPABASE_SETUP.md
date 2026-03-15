@@ -11,7 +11,7 @@
 -- Households and user profiles (one household per user; extend user_profiles later if needed)
 create table if not exists public.households (
   id uuid primary key default gen_random_uuid(),
-  name text not null default 'Home',
+  name text not null,
   created_at timestamptz not null default now()
 );
 
@@ -43,9 +43,9 @@ create table if not exists public.ingredients (
   name text not null,
   tesco_url text null,
   created_at timestamptz not null default now(),
-  unique (household_id, name)
+  unique (household_id, name),
+  unique (household_id, tesco_url)
 );
-create unique index ingredients_household_tesco_url_key on public.ingredients (household_id, tesco_url) where tesco_url is not null;
 
 create table if not exists public.ingredients_recipes (
   recipe_id uuid not null references public.recipes(id) on delete cascade,
