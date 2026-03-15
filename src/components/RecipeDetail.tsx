@@ -1,4 +1,4 @@
-import { useRef, useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { RemovablePill } from "@/components/RemovablePill";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -60,7 +60,6 @@ export function RecipeDetail({
   const [addIngredientId, setAddIngredientId] = useState("");
   const [addQuantity, setAddQuantity] = useState("");
   const [addIngredientOpen, setAddIngredientOpen] = useState(false);
-  const addIngredientOpenAt = useRef<number>(0);
   const [addIngredientSearch, setAddIngredientSearch] = useState("");
   const [creatingIngredient, setCreatingIngredient] = useState(false);
   const [quantityDraft, setQuantityDraft] = useState<Record<string, string>>(
@@ -200,7 +199,6 @@ export function RecipeDetail({
             open={addIngredientOpen}
             onOpenChange={(open) => {
               setAddIngredientOpen(open);
-              if (open) addIngredientOpenAt.current = Date.now();
               if (!open) setAddIngredientSearch("");
             }}
           >
@@ -220,7 +218,7 @@ export function RecipeDetail({
               </Button>
             </PopoverTrigger>
             <PopoverContent
-              className="w-(--radix-popover-trigger-width) p-0"
+              className="z-[100] w-(--radix-popover-trigger-width) p-0"
               align="start"
             >
               <Command
@@ -248,8 +246,6 @@ export function RecipeDetail({
                       value={ing.id}
                       keywords={[ing.name]}
                       onSelect={() => {
-                        if (Date.now() - addIngredientOpenAt.current < 150)
-                          return;
                         setAddIngredientId(ing.id);
                         setAddIngredientOpen(false);
                       }}
