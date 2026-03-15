@@ -54,6 +54,85 @@ async function getCurrentUserId(): Promise<string> {
   return user.id;
 }
 
+export interface Household {
+  id: string;
+  name: string;
+}
+
+export async function getCurrentHouseholdId(): Promise<string> {
+  const client = ensureSupabase();
+  const userId = await getCurrentUserId();
+  const { data: row } = await client
+    .from("user_profiles")
+    .select("household_id")
+    .eq("user_id", userId)
+    .maybeSingle();
+  if (row) return row.household_id;
+  const { data: household, error: createErr } = await client
+    .from("households")
+    .insert({ id: crypto.randomUUID(), name: "Home" })
+    .select("id")
+    .single();
+  if (createErr || !household)
+    throw new Error(createErr?.message ?? "Failed to create household");
+  const { error: linkErr } = await client
+    .from("user_profiles")
+    .insert({ user_id: userId, household_id: household.id });
+  if (linkErr) throw new Error(linkErr.message);
+  return household.id;
+}
+
+export async function getHouseholds(): Promise<Household[]> {
+  const client = ensureSupabase();
+  const userId = await getCurrentUserId();
+  const { data: row, error: rowErr } = await client
+    .from("user_profiles")
+    .select("household_id")
+    .eq("user_id", userId)
+    .maybeSingle();
+  if (rowErr || !row) return [];
+  const { data: h, error } = await client
+    .from("households")
+    .select("id, name")
+    .eq("id", row.household_id)
+    .maybeSingle();
+  if (error || !h) return [];
+  return [{ id: h.id, name: h.name }];
+}
+
+export async function inviteToHousehold(
+  householdId: string,
+  email: string,
+): Promise<void> {
+  const client = ensureSupabase();
+  const userId = await getCurrentUserId();
+  const { error } = await client.from("household_invites").insert({
+    household_id: householdId,
+    email: email.trim().toLowerCase(),
+    invited_by: userId,
+  });
+  if (error) throw new Error(error.message);
+}
+
+export async function acceptPendingInvites(): Promise<void> {
+  const client = ensureSupabase();
+  const {
+    data: { user },
+  } = await client.auth.getUser();
+  if (!user?.email) return;
+  const email = user.email.trim().toLowerCase();
+  const { data: invites } = await client
+    .from("household_invites")
+    .select("household_id")
+    .eq("email", email);
+  if (!invites?.length) return;
+  const { household_id } = invites[0];
+  await client
+    .from("user_profiles")
+    .upsert({ user_id: user.id, household_id }, { onConflict: "user_id" });
+  await client.from("household_invites").delete().eq("email", email);
+}
+
 function mapRecipe(row: {
   id: string;
   name: string;
@@ -166,10 +245,10 @@ export async function getRecipes(): Promise<{ recipes: Recipe[] }> {
 
 export async function addRecipe(name: string): Promise<Recipe> {
   const client = ensureSupabase();
-  const userId = await getCurrentUserId();
+  const householdId = await getCurrentHouseholdId();
   const { data, error } = await client
     .from("recipes")
-    .insert({ id: crypto.randomUUID(), name, user_id: userId })
+    .insert({ id: crypto.randomUUID(), name, household_id: householdId })
     .select("id, name, created_at")
     .single();
 
@@ -208,7 +287,7 @@ export async function addIngredient(
   tescoUrl: string,
 ): Promise<Ingredient> {
   const client = ensureSupabase();
-  const userId = await getCurrentUserId();
+  const householdId = await getCurrentHouseholdId();
   const url = tescoUrl.trim();
   const { data, error } = await client
     .from("ingredients")
@@ -216,7 +295,7 @@ export async function addIngredient(
       id: crypto.randomUUID(),
       name,
       tesco_url: url ? url : null,
-      user_id: userId,
+      household_id: householdId,
     })
     .select("id, name, tesco_url")
     .single();
@@ -308,13 +387,13 @@ export async function setSlotRecipes(
 
   if (!recipeIds.length) return;
 
-  const userId = await getCurrentUserId();
+  const householdId = await getCurrentHouseholdId();
   const rows = recipeIds.map((recipeId) => ({
     happening_at: dateKey,
     meal: mealType,
     target,
     recipe_id: recipeId,
-    user_id: userId,
+    household_id: householdId,
   }));
 
   const { error } = await client.from("plans").insert(rows);
@@ -357,8 +436,11 @@ export async function setDayPlan(
 
   if (!rows.length) return;
 
-  const userId = await getCurrentUserId();
-  const rowsWithUser = rows.map((row) => ({ ...row, user_id: userId }));
-  const { error } = await client.from("plans").insert(rowsWithUser);
+  const householdId = await getCurrentHouseholdId();
+  const rowsWithHousehold = rows.map((row) => ({
+    ...row,
+    household_id: householdId,
+  }));
+  const { error } = await client.from("plans").insert(rowsWithHousehold);
   if (error) throw new Error(error.message);
 }

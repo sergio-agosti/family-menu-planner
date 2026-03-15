@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { BookOpen, Carrot, CalendarDays, LogOut } from "lucide-react";
+import { BookOpen, Carrot, CalendarDays, LogOut, UserPlus } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Dialog,
@@ -8,6 +8,8 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Form, FormField, FormLabel, FormMessage } from "@/components/ui/form";
 import { RecipeForm } from "@/components/RecipeForm";
 import { RecipeList } from "@/components/RecipeList";
 import { RecipeDetail } from "@/components/RecipeDetail";
@@ -16,6 +18,13 @@ import { IngredientList } from "@/components/IngredientList";
 import { WeeklyPlan } from "@/components/WeeklyPlan";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import { AuthScreen } from "@/components/AuthScreen";
+import {
+  acceptPendingInvites,
+  getCurrentHouseholdId,
+  getHouseholds,
+  inviteToHousehold,
+  type Household,
+} from "@/lib/data";
 
 const TAB_STORAGE_KEY = "family-menu-planner-tab";
 const RECIPE_STORAGE_KEY = "family-menu-planner-selected-recipe";
@@ -40,6 +49,11 @@ function AppContent() {
   const [selectedRecipeId, setSelectedRecipeId] = useState<string | null>(
     getStoredRecipeId,
   );
+  const [household, setHousehold] = useState<Household | null>(null);
+  const [inviteOpen, setInviteOpen] = useState(false);
+  const [inviteEmail, setInviteEmail] = useState("");
+  const [inviteError, setInviteError] = useState<string | null>(null);
+  const [inviteLoading, setInviteLoading] = useState(false);
 
   useEffect(() => {
     localStorage.setItem(TAB_STORAGE_KEY, activeTab);
@@ -53,7 +67,36 @@ function AppContent() {
     }
   }, [selectedRecipeId]);
 
+  useEffect(() => {
+    if (!user) return;
+    acceptPendingInvites().catch(() => {});
+  }, [user]);
+
+  useEffect(() => {
+    if (!user) return;
+    getCurrentHouseholdId()
+      .then(() => getHouseholds())
+      .then((list) => setHousehold(list[0] ?? null))
+      .catch(() => setHousehold(null));
+  }, [user, refreshTrigger]);
+
   const refresh = () => setRefreshTrigger((prev) => prev + 1);
+
+  async function handleInviteSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    if (!household) return;
+    setInviteError(null);
+    setInviteLoading(true);
+    try {
+      await inviteToHousehold(household.id, inviteEmail);
+      setInviteEmail("");
+      setInviteOpen(false);
+    } catch (err) {
+      setInviteError(err instanceof Error ? err.message : "Failed to invite");
+    } finally {
+      setInviteLoading(false);
+    }
+  }
 
   if (loading) {
     return (
@@ -70,10 +113,28 @@ function AppContent() {
     <div className="min-h-screen bg-background">
       <div className="container mx-auto max-w-4xl min-w-0 px-3 py-4 sm:px-4 sm:py-8">
         <header className="mb-4 flex flex-wrap items-center justify-between gap-2 sm:mb-8">
-          <h1 className="text-2xl font-bold tracking-tight sm:text-4xl">
-            Family Menu Planner
-          </h1>
+          <div className="min-w-0">
+            <h1 className="text-2xl font-bold tracking-tight sm:text-4xl">
+              Family Menu Planner
+            </h1>
+            {household && (
+              <p className="mt-0.5 truncate text-sm text-muted-foreground">
+                {household.name}
+              </p>
+            )}
+          </div>
           <div className="flex items-center gap-2">
+            {household && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setInviteOpen(true)}
+                aria-label="Invite to household"
+              >
+                <UserPlus className="size-4" />
+                <span className="hidden sm:inline">Invite</span>
+              </Button>
+            )}
             <span
               className="text-sm text-muted-foreground"
               title={user.email ?? undefined}
@@ -90,6 +151,36 @@ function AppContent() {
             </Button>
           </div>
         </header>
+
+        <Dialog open={inviteOpen} onOpenChange={setInviteOpen}>
+          <DialogContent>
+            <DialogTitle>Invite to household</DialogTitle>
+            <DialogDescription>
+              Send an invite to someone. They’ll need to sign in with this email
+              to join {household?.name ?? "your household"}.
+            </DialogDescription>
+            <Form onSubmit={handleInviteSubmit} className="space-y-4">
+              <FormField>
+                <FormLabel htmlFor="invite-email">Email</FormLabel>
+                <Input
+                  id="invite-email"
+                  type="email"
+                  autoComplete="email"
+                  value={inviteEmail}
+                  onChange={(e) => setInviteEmail(e.target.value)}
+                  placeholder="partner@example.com"
+                  required
+                />
+              </FormField>
+              {inviteError && (
+                <FormMessage role="alert">{inviteError}</FormMessage>
+              )}
+              <Button type="submit" disabled={inviteLoading}>
+                {inviteLoading ? "Sending…" : "Send invite"}
+              </Button>
+            </Form>
+          </DialogContent>
+        </Dialog>
 
         <Tabs
           value={activeTab}
