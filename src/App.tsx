@@ -117,38 +117,41 @@ function AppContent() {
             <h1 className="text-2xl font-bold tracking-tight sm:text-4xl">
               Family Menu Planner
             </h1>
-            {household && (
-              <p className="mt-0.5 truncate text-sm text-muted-foreground">
-                {household.name}
-              </p>
-            )}
           </div>
           <div className="flex items-center gap-2">
-            {household && (
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setInviteOpen(true)}
-                aria-label="Invite to household"
-              >
-                <UserPlus className="size-4" />
-                <span className="hidden sm:inline">Invite</span>
-              </Button>
-            )}
             <span
-              className="text-sm text-muted-foreground"
-              title={user.email ?? undefined}
+              className="max-w-[12rem] truncate text-right text-sm text-muted-foreground sm:max-w-xs"
+              title={
+                household
+                  ? `${user.user_metadata?.full_name ?? user.email ?? ""} / ${household.name}`
+                  : (user.user_metadata?.full_name ?? user.email ?? undefined)
+              }
             >
-              {user.email}
+              {user.user_metadata?.full_name ?? user.email}
+              {household ? ` / ${household.name}` : ""}
             </span>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => signOut()}
-              aria-label="Sign out"
-            >
-              <LogOut className="size-4" />
-            </Button>
+            <div className="flex items-center">
+              {household && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setInviteOpen(true)}
+                  className="px-2"
+                  aria-label="Invite to household"
+                >
+                  <UserPlus className="size-4" />
+                </Button>
+              )}
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => signOut()}
+                className="px-2"
+                aria-label="Sign out"
+              >
+                <LogOut className="size-4" />
+              </Button>
+            </div>
           </div>
         </header>
 
