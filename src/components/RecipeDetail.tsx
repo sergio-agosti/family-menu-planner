@@ -32,7 +32,6 @@ import {
   ExternalLink,
   Plus,
   Search,
-  Trash2,
   X,
 } from "lucide-react";
 
@@ -218,7 +217,7 @@ export function RecipeDetail({
               </Button>
             </PopoverTrigger>
             <PopoverContent
-              className="z-[100] w-(--radix-popover-trigger-width) p-0"
+              className="z-100 w-(--radix-popover-trigger-width) p-0"
               align="start"
             >
               <Command
