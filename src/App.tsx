@@ -120,7 +120,7 @@ function AppContent() {
           </div>
           <div className="flex items-center gap-2">
             <span
-              className="max-w-[12rem] truncate text-right text-sm text-muted-foreground sm:max-w-xs"
+              className="max-w-48 truncate text-right text-sm text-muted-foreground sm:max-w-xs"
               title={
                 household
                   ? `${user.user_metadata?.full_name ?? user.email ?? ""} / ${household.name}`
