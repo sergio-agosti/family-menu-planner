@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo, useCallback } from "react";
 import { Plus, ChevronDown, ChevronRight } from "lucide-react";
+import { cn } from "@/lib/utils";
 import { RemovablePill } from "@/components/RemovablePill";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/Button";
@@ -67,6 +68,15 @@ function formatDay(d: Date): string {
     day: "numeric",
     month: "short",
   });
+}
+
+function isCalendarToday(d: Date): boolean {
+  const n = new Date();
+  return (
+    d.getFullYear() === n.getFullYear() &&
+    d.getMonth() === n.getMonth() &&
+    d.getDate() === n.getDate()
+  );
 }
 
 interface WeeklyPlanProps {
@@ -250,7 +260,7 @@ export function WeeklyPlan({ refreshTrigger, onOpenRecipe }: WeeklyPlanProps) {
             className="grid gap-0 border-t bg-muted/50 backdrop-blur-md"
             style={{ gridTemplateColumns: gridCols }}
           >
-            <div className="sticky left-0 z-10 border-r border-b bg-muted/70 p-1.5 text-xs font-medium backdrop-blur-md sm:p-2 sm:text-sm">
+            <div className="sticky left-0 z-10 border-r border-b border-l-2 border-l-transparent bg-muted/70 p-1.5 text-xs font-medium backdrop-blur-md sm:p-2 sm:text-sm">
               Day
             </div>
             {MEAL_TYPES.map(({ key, label }) => {
@@ -297,13 +307,22 @@ export function WeeklyPlan({ refreshTrigger, onOpenRecipe }: WeeklyPlanProps) {
           {days.map((d) => {
             const dateKey = toDateKey(d);
             const dayPlan = plan[dateKey] ?? {};
+            const isToday = isCalendarToday(d);
             return (
               <div
                 key={dateKey}
                 className="grid gap-0 border-b last:border-b-0"
                 style={{ gridTemplateColumns: gridCols }}
               >
-                <div className="sticky left-0 z-10 shrink-0 border-r bg-card/90 p-1.5 text-xs font-medium backdrop-blur-md sm:p-2 sm:text-sm">
+                <div
+                  className={cn(
+                    "sticky left-0 z-10 shrink-0 border-r border-l-2 p-1.5 text-xs font-medium backdrop-blur-md sm:p-2 sm:text-sm",
+                    isToday
+                      ? "border-l-primary bg-primary/15 font-semibold text-foreground"
+                      : "border-l-transparent bg-card/90",
+                  )}
+                  aria-current={isToday ? "date" : undefined}
+                >
                   {formatDay(d)}
                 </div>
                 {MEAL_TYPES.map(({ key, label }) => {
@@ -312,7 +331,10 @@ export function WeeklyPlan({ refreshTrigger, onOpenRecipe }: WeeklyPlanProps) {
                     return (
                       <div
                         key={key}
-                        className="flex min-w-0 items-center justify-center border-r bg-card/90 last:border-r-0"
+                        className={cn(
+                          "flex min-w-0 items-center justify-center border-r last:border-r-0",
+                          isToday ? "bg-primary/10" : "bg-card/90",
+                        )}
                       >
                         <Button
                           type="button"
@@ -332,7 +354,10 @@ export function WeeklyPlan({ refreshTrigger, onOpenRecipe }: WeeklyPlanProps) {
                   return (
                     <div
                       key={key}
-                      className="flex min-w-24 flex-col gap-1.5 border-r p-1.5 last:border-r-0 sm:gap-2 sm:p-2"
+                      className={cn(
+                        "flex min-w-24 flex-col gap-1.5 border-r p-1.5 last:border-r-0 sm:gap-2 sm:p-2",
+                        isToday && "bg-primary/10",
+                      )}
                     >
                       {TARGETS.map(({ key: targetKey, label: targetLabel }) => {
                         const ids = mealEntry[targetKey] ?? [];
