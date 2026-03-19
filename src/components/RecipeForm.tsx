@@ -1,5 +1,5 @@
 import { useState, FormEvent } from "react";
-import { Button } from "@/components/ui/button";
+import { Button } from "@/components/Button";
 import { Input } from "@/components/ui/input";
 import { Form, FormField, FormLabel, FormMessage } from "@/components/ui/form";
 import { addRecipe } from "@/lib/data";

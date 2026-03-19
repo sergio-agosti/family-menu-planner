@@ -7,7 +7,7 @@ import {
   DialogDescription,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
+import { Button } from "@/components/Button";
 import { Input } from "@/components/ui/input";
 import { Form, FormField, FormLabel, FormMessage } from "@/components/ui/form";
 import { RecipeForm } from "@/components/RecipeForm";

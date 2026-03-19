@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
+import { Button } from "@/components/Button";
 import { Input } from "@/components/ui/input";
 import {
   deleteIngredient,
@@ -165,7 +165,7 @@ export function IngredientList({ refreshTrigger }: IngredientListProps) {
                     {ing.name}
                   </span>
                 )}
-                <div className="flex flex-wrap items-center justify-end gap-2">
+                <div className="flex flex-wrap items-center justify-end">
                   {ing.tescoUrl ? (
                     <a
                       href={ing.tescoUrl}
