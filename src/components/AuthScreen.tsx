@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Button } from "@/components/Button";
+import { ThemeToggle } from "@/components/ThemeToggle";
 import { Form, FormField, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { useAuth } from "@/contexts/AuthContext";
@@ -30,7 +31,10 @@ export function AuthScreen() {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center px-4">
+    <div className="relative flex min-h-screen items-center justify-center px-4">
+      <div className="absolute top-4 right-4">
+        <ThemeToggle />
+      </div>
       <div className="w-full max-w-sm space-y-6 rounded-lg border bg-card p-6 shadow-sm">
         <h2 className="text-center text-xl font-semibold">
           {isSignUp ? "Create account" : "Sign in"}

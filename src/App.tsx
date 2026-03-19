@@ -16,8 +16,9 @@ import { RecipeDetail } from "@/components/RecipeDetail";
 import { IngredientForm } from "@/components/IngredientForm";
 import { IngredientList } from "@/components/IngredientList";
 import { WeeklyPlan } from "@/components/WeeklyPlan";
-import { AuthProvider, useAuth } from "@/contexts/AuthContext";
+import { useAuth } from "@/contexts/AuthContext";
 import { AuthScreen } from "@/components/AuthScreen";
+import { ThemeToggle } from "@/components/ThemeToggle";
 import {
   acceptPendingInvites,
   getCurrentHouseholdId,
@@ -131,6 +132,7 @@ function AppContent() {
               {household ? ` / ${household.name}` : ""}
             </span>
             <div className="flex items-center">
+              <ThemeToggle />
               {household && (
                 <Button
                   variant="ghost"
@@ -284,9 +286,5 @@ function AppContent() {
 }
 
 export default function App() {
-  return (
-    <AuthProvider>
-      <AppContent />
-    </AuthProvider>
-  );
+  return <AppContent />;
 }
