@@ -2,10 +2,10 @@ import { useState, FormEvent } from "react";
 import { Button } from "@/components/Button";
 import { Input } from "@/components/ui/input";
 import { Form, FormField, FormLabel, FormMessage } from "@/components/ui/form";
-import { addRecipe } from "@/lib/data";
+import { addRecipe, type Recipe } from "@/lib/data";
 
 interface RecipeFormProps {
-  onRecipeAdded?: () => void;
+  onRecipeAdded?: (recipe: Recipe) => void;
 }
 
 export function RecipeForm({ onRecipeAdded }: RecipeFormProps) {
@@ -24,11 +24,9 @@ export function RecipeForm({ onRecipeAdded }: RecipeFormProps) {
 
     setIsLoading(true);
     try {
-      await addRecipe(recipeName.trim());
+      const recipe = await addRecipe(recipeName.trim());
       setRecipeName("");
-      if (onRecipeAdded) {
-        onRecipeAdded();
-      }
+      onRecipeAdded?.(recipe);
     } catch (err) {
       const errorMessage =
         err instanceof Error ? err.message : "Failed to add recipe";

@@ -13,25 +13,29 @@ export interface ButtonProps extends ShadcnButtonProps {
   iconPosition?: IconPosition;
 }
 
-export function Button({
-  icon,
-  text,
-  iconPosition = "left",
-  children,
-  ...props
-}: ButtonProps) {
-  if (children != null) {
-    return <ShadcnButton {...props}>{children}</ShadcnButton>;
-  }
+export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
+  function Button(
+    { icon, text, iconPosition = "left", children, ...props },
+    ref,
+  ) {
+    if (children != null) {
+      return (
+        <ShadcnButton ref={ref} {...props}>
+          {children}
+        </ShadcnButton>
+      );
+    }
 
-  const iconNode = icon ? <span aria-hidden="true">{icon}</span> : null;
+    const iconNode = icon ? <span aria-hidden="true">{icon}</span> : null;
 
-  return (
-    <ShadcnButton {...props}>
-      {iconPosition === "right" ? text : iconNode}
-      {iconPosition === "right" ? iconNode : text}
-    </ShadcnButton>
-  );
-}
+    return (
+      <ShadcnButton ref={ref} {...props}>
+        {iconPosition === "right" ? text : iconNode}
+        {iconPosition === "right" ? iconNode : text}
+      </ShadcnButton>
+    );
+  },
+);
+Button.displayName = "Button";
 
 export { buttonVariants };
