@@ -3,8 +3,14 @@ import react from "@vitejs/plugin-react";
 import tailwindcss from "@tailwindcss/vite";
 import path from "path";
 
+function resolveBase(): string {
+  if (!process.env.GITHUB_PAGES) return "/";
+  const repo = process.env.GITHUB_REPOSITORY?.split("/")[1];
+  return repo ? `/${repo}/` : "/";
+}
+
 export default defineConfig({
-  base: process.env.GITHUB_PAGES ? "/family-menu-planner/" : "/",
+  base: resolveBase(),
   plugins: [tailwindcss(), react()],
   resolve: {
     alias: {
