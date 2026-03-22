@@ -28,12 +28,17 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/Button";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+  Command,
+  CommandEmpty,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from "@/components/ui/command";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 import {
   getData,
   getPlanForDateRange,
@@ -302,6 +307,83 @@ function DraggablePlanRecipe({
         className="w-full min-w-0"
       />
     </div>
+  );
+}
+
+function AddRecipeSlotPicker({
+  recipes,
+  disabled,
+  ariaLabel,
+  onPick,
+}: {
+  recipes: Recipe[];
+  disabled: boolean;
+  ariaLabel: string;
+  onPick: (recipeId: string) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const [search, setSearch] = useState("");
+
+  return (
+    <Popover
+      open={open}
+      onOpenChange={(next) => {
+        setOpen(next);
+        if (!next) setSearch("");
+      }}
+    >
+      <PopoverTrigger asChild>
+        <Button
+          type="button"
+          variant="ghost"
+          size="icon"
+          className="h-6 w-6 shrink-0"
+          aria-label={ariaLabel}
+          disabled={disabled}
+        >
+          <Plus className="size-3.5" />
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent
+        className="z-100 w-72 p-0"
+        align="start"
+        side="bottom"
+        sideOffset={4}
+      >
+        <Command
+          filter={(value, searchText, keywords) => {
+            const s = (searchText ?? "").trim().toLowerCase();
+            if (!s) return 1;
+            const text = [value, ...(keywords ?? [])]
+              .join(" ")
+              .toLowerCase();
+            return text.includes(s) ? 1 : 0;
+          }}
+        >
+          <CommandInput
+            placeholder="Search recipes…"
+            value={search}
+            onValueChange={setSearch}
+          />
+          <CommandList>
+            <CommandEmpty>No recipe found.</CommandEmpty>
+            {recipes.map((r) => (
+              <CommandItem
+                key={r.id}
+                value={r.id}
+                keywords={[r.name]}
+                onSelect={() => {
+                  onPick(r.id);
+                  setOpen(false);
+                }}
+              >
+                {r.name}
+              </CommandItem>
+            ))}
+          </CommandList>
+        </Command>
+      </PopoverContent>
+    </Popover>
   );
 }
 
@@ -722,51 +804,21 @@ export function WeeklyPlan({ refreshTrigger, onOpenRecipe }: WeeklyPlanProps) {
                                   <span className="font-semibold text-muted-foreground sm:text-xs">
                                     {targetLabel}
                                   </span>
-                                  <Select
-                                    key={`${dateKey}-${key}-${targetKey}-${ids.length}`}
-                                    value="__add__"
-                                    onValueChange={(v) => {
-                                      if (v && v !== "__add__") {
-                                        addRecipeToSlot(
-                                          dateKey,
-                                          key,
-                                          targetKey,
-                                          v,
-                                        );
-                                      }
-                                    }}
-                                    disabled={isSaving || recipes.length === 0}
-                                  >
-                                    <SelectTrigger
-                                      size="sm"
-                                      className="h-6 w-6 shrink-0 justify-center gap-0 border-0 p-0 shadow-none [&>*:last-child]:w-0 [&>*:last-child]:min-w-0 [&>*:last-child]:overflow-hidden [&>svg]:size-3.5 [&>svg:last-of-type]:hidden"
-                                      aria-label={`Add recipe to ${targetLabel}`}
-                                    >
-                                      <Plus />
-                                      <SelectValue
-                                        className="sr-only"
-                                        placeholder=""
-                                      />
-                                    </SelectTrigger>
-                                    <SelectContent
-                                      position="popper"
-                                      side="bottom"
-                                      align="start"
-                                      sideOffset={4}
-                                    >
-                                      <SelectItem
-                                        value="__add__"
-                                        className="hidden"
-                                      >
-                                        {"\u200b"}
-                                      </SelectItem>
-                                      {sortedRecipes.map((r) => (
-                                        <SelectItem key={r.id} value={r.id}>
-                                          {r.name}
-                                        </SelectItem>
-                                      ))}
-                                    </SelectContent>
-                                  </Select>
+                                  <AddRecipeSlotPicker
+                                    recipes={sortedRecipes}
+                                    disabled={
+                                      isSaving || recipes.length === 0
+                                    }
+                                    ariaLabel={`Add recipe to ${targetLabel}`}
+                                    onPick={(recipeId) =>
+                                      void addRecipeToSlot(
+                                        dateKey,
+                                        key,
+                                        targetKey,
+                                        recipeId,
+                                      )
+                                    }
+                                  />
                                 </div>
                                 <div className="flex w-full min-w-0 flex-col gap-1">
                                   {[...ids]

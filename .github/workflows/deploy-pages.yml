@@ -33,11 +33,10 @@ jobs:
           path: dist
 
   deploy:
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
-    runs-on: ubuntu-latest
     needs: build
+    runs-on: ubuntu-latest
+    environment: ${{ format('%s-pages', 'github') }}
     steps:
       - id: deployment
+        name: Deploy to GitHub Pages
         uses: actions/deploy-pages@v4
