@@ -252,7 +252,12 @@ function AppContent() {
               <h2 className="mb-4 text-xl font-semibold sm:text-2xl">
                 Add New Recipe
               </h2>
-              <RecipeForm onRecipeAdded={refresh} />
+              <RecipeForm
+                onRecipeAdded={(recipe) => {
+                  refresh();
+                  setSelectedRecipeId(recipe.id);
+                }}
+              />
             </div>
             <RecipeList
               refreshTrigger={refreshTrigger}
