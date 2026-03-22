@@ -58,6 +58,7 @@ export function RemovablePill({
         variant="ghost"
         size="sm"
         className="h-6 w-6 shrink-0 cursor-pointer touch-manipulation rounded-full p-0 text-base leading-none text-muted-foreground hover:bg-muted hover:text-destructive sm:h-5 sm:w-5 sm:text-sm"
+        onPointerDown={(e) => e.stopPropagation()}
         onClick={(e) => {
           e.stopPropagation();
           onRemove();
