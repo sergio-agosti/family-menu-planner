@@ -41,6 +41,8 @@ interface RecipeDetailProps {
   onUpdated?: () => void;
   /** When true, render only the ingredients section (no card, no title). */
   inline?: boolean;
+  /** Render popovers inside this node (e.g. dialog content) so nested lists scroll when a modal uses scroll lock. */
+  popoverPortalContainer?: HTMLElement | null;
 }
 
 export function RecipeDetail({
@@ -48,6 +50,7 @@ export function RecipeDetail({
   onClose,
   onUpdated,
   inline = false,
+  popoverPortalContainer,
 }: RecipeDetailProps) {
   const [recipe, setRecipe] = useState<Recipe | null>(null);
   const [ingredients, setIngredients] = useState<Ingredient[]>([]);
@@ -217,6 +220,7 @@ export function RecipeDetail({
               </Button>
             </PopoverTrigger>
             <PopoverContent
+              container={popoverPortalContainer}
               className="z-100 w-(--radix-popover-trigger-width) p-0"
               align="start"
             >

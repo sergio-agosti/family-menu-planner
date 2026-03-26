@@ -55,6 +55,8 @@ function AppContent() {
   const [inviteEmail, setInviteEmail] = useState("");
   const [inviteError, setInviteError] = useState<string | null>(null);
   const [inviteLoading, setInviteLoading] = useState(false);
+  const [recipeDialogContentEl, setRecipeDialogContentEl] =
+    useState<HTMLElement | null>(null);
 
   useEffect(() => {
     localStorage.setItem(TAB_STORAGE_KEY, activeTab);
@@ -227,20 +229,25 @@ function AppContent() {
             onOpenChange={(open) => !open && setSelectedRecipeId(null)}
           >
             <DialogContent
-              className="max-h-[90vh] max-w-2xl overflow-y-auto rounded-none border-0 bg-transparent p-0 shadow-none"
+              ref={setRecipeDialogContentEl}
+              className="max-h-[90vh] max-w-2xl overflow-visible rounded-none border-0 bg-transparent p-0 shadow-none"
               showCloseButton={false}
             >
               <DialogTitle className="sr-only">Recipe</DialogTitle>
               <DialogDescription className="sr-only">
                 Recipe ingredients and details
               </DialogDescription>
-              {selectedRecipeId && (
-                <RecipeDetail
-                  recipeId={selectedRecipeId}
-                  onClose={() => setSelectedRecipeId(null)}
-                  onUpdated={refresh}
-                />
-              )}
+              {/* Scroll only the recipe panel; dialog root stays overflow-visible so portaled popovers are not clipped */}
+              <div className="max-h-[90vh] min-h-0 overflow-y-auto">
+                {selectedRecipeId && (
+                  <RecipeDetail
+                    recipeId={selectedRecipeId}
+                    onClose={() => setSelectedRecipeId(null)}
+                    onUpdated={refresh}
+                    popoverPortalContainer={recipeDialogContentEl}
+                  />
+                )}
+              </div>
             </DialogContent>
           </Dialog>
 

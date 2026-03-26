@@ -10,9 +10,12 @@ const PopoverAnchor = PopoverPrimitive.Anchor;
 
 const PopoverContent = React.forwardRef<
   React.ComponentRef<typeof PopoverPrimitive.Content>,
-  React.ComponentPropsWithoutRef<typeof PopoverPrimitive.Content>
->(({ className, align = "start", sideOffset = 4, ...props }, ref) => (
-  <PopoverPrimitive.Portal>
+  React.ComponentPropsWithoutRef<typeof PopoverPrimitive.Content> & {
+    /** Portal target (e.g. dialog content node). Defaults to `document.body`. */
+    container?: HTMLElement | null;
+  }
+>(({ className, align = "start", sideOffset = 4, container, ...props }, ref) => (
+  <PopoverPrimitive.Portal container={container ?? undefined}>
     <PopoverPrimitive.Content
       ref={ref}
       align={align}
