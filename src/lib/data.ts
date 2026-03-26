@@ -350,13 +350,21 @@ export async function setRecipeIngredients(
   }
 }
 
+/** Calendar date in the user's local timezone (YYYY-MM-DD). Plan slots use this, not UTC. */
+export function toLocalDateKey(d: Date): string {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${y}-${m}-${day}`;
+}
+
 export async function getPlanForDateRange(
   startDate: Date,
   endDate: Date,
 ): Promise<Record<string, DayPlan>> {
   const client = ensureSupabase();
-  const start = startDate.toISOString().slice(0, 10);
-  const end = endDate.toISOString().slice(0, 10);
+  const start = toLocalDateKey(startDate);
+  const end = toLocalDateKey(endDate);
 
   const { data, error } = await client
     .from("plans")

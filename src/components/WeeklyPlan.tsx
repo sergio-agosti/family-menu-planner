@@ -44,6 +44,7 @@ import {
   getData,
   getPlanForDateRange,
   setSlotRecipes,
+  toLocalDateKey,
   type DayPlan,
   type MealType,
   type Recipe,
@@ -85,10 +86,6 @@ function getMonday(d: Date): Date {
   x.setDate(x.getDate() + diff);
   x.setHours(0, 0, 0, 0);
   return x;
-}
-
-function toDateKey(d: Date): string {
-  return d.toISOString().slice(0, 10);
 }
 
 function formatDay(d: Date): string {
@@ -765,7 +762,7 @@ export function WeeklyPlan({ refreshTrigger, onOpenRecipe }: WeeklyPlanProps) {
               })}
             </div>
             {days.map((d) => {
-              const dateKey = toDateKey(d);
+              const dateKey = toLocalDateKey(d);
               const dayPlan = plan[dateKey] ?? {};
               const isToday = isCalendarToday(d);
               return (
