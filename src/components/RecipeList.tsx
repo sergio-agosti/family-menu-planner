@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from "react";
+import { ListCardSkeleton } from "@/components/ListCardSkeleton";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/Button";
 import { Input } from "@/components/ui/input";
@@ -63,13 +64,7 @@ export function RecipeList({
   }, [refreshTrigger]);
 
   if (isLoading) {
-    return (
-      <Card>
-        <CardContent className="pt-6">
-          <p className="text-muted-foreground">Loading recipes...</p>
-        </CardContent>
-      </Card>
-    );
+    return <ListCardSkeleton />;
   }
 
   if (error) {

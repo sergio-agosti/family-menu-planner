@@ -25,6 +25,7 @@ import { Plus, ChevronDown, ChevronRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { RemovablePill } from "@/components/RemovablePill";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/Button";
 import {
@@ -43,6 +44,7 @@ import {
   getData,
   getPlanForDateRange,
   setSlotRecipes,
+  toLocalDateKey,
   type DayPlan,
   type MealType,
   type Recipe,
@@ -84,10 +86,6 @@ function getMonday(d: Date): Date {
   x.setDate(x.getDate() + diff);
   x.setHours(0, 0, 0, 0);
   return x;
-}
-
-function toDateKey(d: Date): string {
-  return d.toISOString().slice(0, 10);
 }
 
 function formatDay(d: Date): string {
@@ -637,8 +635,45 @@ export function WeeklyPlan({ refreshTrigger, onOpenRecipe }: WeeklyPlanProps) {
   if (loading) {
     return (
       <Card>
-        <CardContent className="pt-6">
-          <p className="text-muted-foreground">Loading plan…</p>
+        <CardHeader className="flex flex-col gap-3 px-3 sm:flex-row sm:items-center sm:justify-between sm:px-6">
+          <Skeleton className="h-7 w-36" />
+          <div className="flex shrink-0 gap-2">
+            <Skeleton className="h-8 w-36 sm:w-40" />
+            <Skeleton className="h-8 w-32 sm:w-36" />
+          </div>
+        </CardHeader>
+        <CardContent className="overflow-x-auto rounded-b-xl p-0 px-0! pb-0!">
+          <div className="min-w-md border-t">
+            <div
+              className="grid gap-0 border-b bg-muted/50"
+              style={{
+                gridTemplateColumns: "7rem repeat(3, minmax(6rem, 1fr))",
+              }}
+            >
+              {Array.from({ length: 4 }).map((_, i) => (
+                <Skeleton
+                  key={i}
+                  className="h-10 rounded-none border-r border-b border-border/80 last:border-r-0"
+                />
+              ))}
+            </div>
+            {Array.from({ length: 8 }).map((_, row) => (
+              <div
+                key={row}
+                className="grid gap-0 border-b bg-background last:border-b-0"
+                style={{
+                  gridTemplateColumns: "7rem repeat(3, minmax(6rem, 1fr))",
+                }}
+              >
+                {Array.from({ length: 4 }).map((_, col) => (
+                  <Skeleton
+                    key={col}
+                    className="min-h-14 rounded-none border-r border-border/40 last:border-r-0"
+                  />
+                ))}
+              </div>
+            ))}
+          </div>
         </CardContent>
       </Card>
     );
@@ -727,7 +762,7 @@ export function WeeklyPlan({ refreshTrigger, onOpenRecipe }: WeeklyPlanProps) {
               })}
             </div>
             {days.map((d) => {
-              const dateKey = toDateKey(d);
+              const dateKey = toLocalDateKey(d);
               const dayPlan = plan[dateKey] ?? {};
               const isToday = isCalendarToday(d);
               return (
