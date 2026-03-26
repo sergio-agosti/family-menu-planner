@@ -27,7 +27,6 @@ import {
 } from "@/lib/data";
 import { getTescoSearchUrl } from "@/lib/utils";
 import {
-  Check,
   ChevronsUpDown,
   ClipboardPaste,
   ExternalLink,
@@ -60,8 +59,6 @@ export function RecipeDetail({
   >([]);
   const [isLoading, setIsLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [addIngredientId, setAddIngredientId] = useState("");
-  const [addQuantity, setAddQuantity] = useState("");
   const [addIngredientOpen, setAddIngredientOpen] = useState(false);
   const [addIngredientSearch, setAddIngredientSearch] = useState("");
   const [creatingIngredient, setCreatingIngredient] = useState(false);
@@ -110,19 +107,24 @@ export function RecipeDetail({
     persistIngredients(next);
   };
 
-  const handleAdd = () => {
-    const id = addIngredientId.trim();
+  const addIngredientToRecipe = (ingredientId: string) => {
+    if (saving) return;
+    const id = ingredientId.trim();
     if (!id) return;
+    if (recipeIngredients.some((ri) => ri.ingredientId === id)) {
+      setAddIngredientOpen(false);
+      setAddIngredientSearch("");
+      return;
+    }
     const next = [
       ...recipeIngredients.map((ri) => ({
         ingredientId: ri.ingredientId,
         quantity: ri.quantity,
       })),
-      { ingredientId: id, quantity: addQuantity.trim() },
+      { ingredientId: id, quantity: "" },
     ];
-    setAddIngredientId("");
-    setAddQuantity("");
     setAddIngredientOpen(false);
+    setAddIngredientSearch("");
     persistIngredients(next);
   };
 
@@ -135,16 +137,19 @@ export function RecipeDetail({
       setIngredients((prev) =>
         [...prev, newIngredient].sort((a, b) => a.name.localeCompare(b.name)),
       );
+      if (recipeIngredients.some((ri) => ri.ingredientId === newIngredient.id)) {
+        setAddIngredientSearch("");
+        setAddIngredientOpen(false);
+        return;
+      }
       const next = [
         ...recipeIngredients.map((ri) => ({
           ingredientId: ri.ingredientId,
           quantity: ri.quantity,
         })),
-        { ingredientId: newIngredient.id, quantity: addQuantity.trim() },
+        { ingredientId: newIngredient.id, quantity: "" },
       ];
       await persistIngredients(next);
-      setAddIngredientId("");
-      setAddQuantity("");
       setAddIngredientSearch("");
       setAddIngredientOpen(false);
     } finally {
@@ -197,7 +202,7 @@ export function RecipeDetail({
     <div className="flex flex-col gap-y-2">
       {!inline && <h4 className="text-sm font-medium">Ingredients</h4>}
       <div className="grid grid-cols-[2fr_1fr_auto] items-center gap-x-2 gap-y-2">
-        <div className="col-span-full grid grid-cols-subgrid items-center gap-x-2 text-sm">
+        <div className="col-span-full text-sm">
           <Popover
             open={addIngredientOpen}
             onOpenChange={(open) => {
@@ -212,11 +217,7 @@ export function RecipeDetail({
                 aria-expanded={addIngredientOpen}
                 className="h-9 w-full min-w-0 justify-between font-normal"
               >
-                <span className="truncate">
-                  {addIngredientId
-                    ? (byId[addIngredientId]?.name ?? addIngredientId)
-                    : "Add ingredient…"}
-                </span>
+                <span className="truncate">Add ingredient…</span>
                 <ChevronsUpDown className="ml-2 size-4 shrink-0 opacity-50" />
               </Button>
             </PopoverTrigger>
@@ -226,7 +227,6 @@ export function RecipeDetail({
               align="start"
             >
               <Command
-                value={addIngredientId}
                 filter={(value, search, keywords) => {
                   if (value === "__create__") return 1;
                   const s = (search ?? "").trim().toLowerCase();
@@ -249,18 +249,8 @@ export function RecipeDetail({
                       key={ing.id}
                       value={ing.id}
                       keywords={[ing.name]}
-                      onSelect={() => {
-                        setAddIngredientId(ing.id);
-                        setAddIngredientOpen(false);
-                      }}
+                      onSelect={() => addIngredientToRecipe(ing.id)}
                     >
-                      <Check
-                        className={
-                          addIngredientId === ing.id
-                            ? "mr-2 size-4 opacity-100"
-                            : "mr-2 size-4 opacity-0"
-                        }
-                      />
                       {ing.name}
                     </CommandItem>
                   ))}
@@ -273,7 +263,7 @@ export function RecipeDetail({
                     variant="ghost"
                     size="sm"
                     className="w-full justify-start gap-2 font-normal"
-                    disabled={creatingIngredient}
+                    disabled={creatingIngredient || saving}
                     onClick={() => handleCreateIngredient(addIngredientSearch)}
                   >
                     <Plus className="size-4 shrink-0" />
@@ -283,25 +273,6 @@ export function RecipeDetail({
               )}
             </PopoverContent>
           </Popover>
-          <Input
-            placeholder="Qty"
-            value={addQuantity}
-            onChange={(e) => setAddQuantity(e.target.value)}
-            className="h-8 w-full justify-self-end text-right text-sm"
-          />
-          <div className="flex items-center justify-end">
-            <Button
-              type="button"
-              variant="ghost"
-              size="sm"
-              className="h-9 w-9 touch-manipulation p-0 text-muted-foreground"
-              title="Add ingredient"
-              onClick={handleAdd}
-              disabled={saving || !addIngredientId.trim() || creatingIngredient}
-            >
-              <Plus className="size-4" />
-            </Button>
-          </div>
         </div>
         <ul className="col-span-full grid grid-cols-subgrid items-center gap-x-2 gap-y-2">
           {recipeIngredients.length === 0 ? (
