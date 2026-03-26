@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { RemovablePill } from "@/components/RemovablePill";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -35,6 +35,35 @@ import {
   X,
 } from "lucide-react";
 
+function sortRecipeIngredientsForDisplay(
+  items: RecipeIngredient[],
+  nameById: Record<string, string>,
+  pinnedIngredientId: string | null,
+): RecipeIngredient[] {
+  const label = (ingredientId: string) =>
+    nameById[ingredientId] ?? "\uffff";
+
+  const byName = (a: RecipeIngredient, b: RecipeIngredient) =>
+    label(a.ingredientId).localeCompare(label(b.ingredientId), undefined, {
+      sensitivity: "base",
+    });
+
+  if (
+    !pinnedIngredientId ||
+    !items.some((ri) => ri.ingredientId === pinnedIngredientId)
+  ) {
+    return [...items].sort(byName);
+  }
+
+  const pinned = items.find(
+    (ri) => ri.ingredientId === pinnedIngredientId,
+  )!;
+  const rest = items.filter(
+    (ri) => ri.ingredientId !== pinnedIngredientId,
+  );
+  return [pinned, ...rest.sort(byName)];
+}
+
 interface RecipeDetailProps {
   recipeId: string;
   onClose: () => void;
@@ -66,6 +95,9 @@ export function RecipeDetail({
     {},
   );
   const [pastingId, setPastingId] = useState<string | null>(null);
+  const [pinnedIngredientId, setPinnedIngredientId] = useState<string | null>(
+    null,
+  );
 
   const refreshIngredients = () =>
     getData().then((data) =>
@@ -75,6 +107,7 @@ export function RecipeDetail({
     );
 
   useEffect(() => {
+    setPinnedIngredientId(null);
     getData().then((data) => {
       const r = data.recipes.find((x) => x.id === recipeId) ?? null;
       setRecipe(r);
@@ -85,6 +118,17 @@ export function RecipeDetail({
       setIsLoading(false);
     });
   }, [recipeId]);
+
+  useEffect(() => {
+    if (
+      pinnedIngredientId &&
+      !recipeIngredients.some(
+        (ri) => ri.ingredientId === pinnedIngredientId,
+      )
+    ) {
+      setPinnedIngredientId(null);
+    }
+  }, [recipeIngredients, pinnedIngredientId]);
 
   const persistIngredients = async (
     items: { ingredientId: string; quantity: string }[],
@@ -101,13 +145,14 @@ export function RecipeDetail({
   };
 
   const handleRemove = (ingredientId: string) => {
+    if (ingredientId === pinnedIngredientId) setPinnedIngredientId(null);
     const next = recipeIngredients
       .filter((ri) => ri.ingredientId !== ingredientId)
       .map((ri) => ({ ingredientId: ri.ingredientId, quantity: ri.quantity }));
     persistIngredients(next);
   };
 
-  const addIngredientToRecipe = (ingredientId: string) => {
+  const addIngredientToRecipe = async (ingredientId: string) => {
     if (saving) return;
     const id = ingredientId.trim();
     if (!id) return;
@@ -125,7 +170,8 @@ export function RecipeDetail({
     ];
     setAddIngredientOpen(false);
     setAddIngredientSearch("");
-    persistIngredients(next);
+    await persistIngredients(next);
+    setPinnedIngredientId(id);
   };
 
   const handleCreateIngredient = async (name: string) => {
@@ -150,6 +196,7 @@ export function RecipeDetail({
         { ingredientId: newIngredient.id, quantity: "" },
       ];
       await persistIngredients(next);
+      setPinnedIngredientId(newIngredient.id);
       setAddIngredientSearch("");
       setAddIngredientOpen(false);
     } finally {
@@ -197,6 +244,19 @@ export function RecipeDetail({
   };
 
   const byId = Object.fromEntries(ingredients.map((i) => [i.id, i]));
+  const ingredientNameById = useMemo(
+    () => Object.fromEntries(ingredients.map((i) => [i.id, i.name])),
+    [ingredients],
+  );
+  const displayedRecipeIngredients = useMemo(
+    () =>
+      sortRecipeIngredientsForDisplay(
+        recipeIngredients,
+        ingredientNameById,
+        pinnedIngredientId,
+      ),
+    [recipeIngredients, ingredientNameById, pinnedIngredientId],
+  );
 
   const ingredientsBlock = (
     <div className="flex flex-col gap-y-2">
@@ -283,7 +343,7 @@ export function RecipeDetail({
               No ingredients yet.
             </li>
           ) : (
-            recipeIngredients.map((ri, index) => {
+            displayedRecipeIngredients.map((ri, index) => {
               const ing = byId[ri.ingredientId];
               const label = ing ? ing.name : "(unknown)";
               return (
