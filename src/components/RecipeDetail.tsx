@@ -1,4 +1,10 @@
-import { useState, useEffect, useMemo } from "react";
+import {
+  useState,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+} from "react";
 import { RemovablePill } from "@/components/RemovablePill";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -98,6 +104,14 @@ export function RecipeDetail({
   const [pinnedIngredientId, setPinnedIngredientId] = useState<string | null>(
     null,
   );
+  const quantityInputRefs = useRef<Map<string, HTMLInputElement>>(new Map());
+  const tescoSearchButtonRefs = useRef<Map<string, HTMLButtonElement>>(
+    new Map(),
+  );
+  const [pendingFocusAfterAdd, setPendingFocusAfterAdd] = useState<{
+    ingredientId: string;
+    triggerTescoSearch: boolean;
+  } | null>(null);
 
   const refreshIngredients = () =>
     getData().then((data) =>
@@ -129,6 +143,20 @@ export function RecipeDetail({
       setPinnedIngredientId(null);
     }
   }, [recipeIngredients, pinnedIngredientId]);
+
+  useLayoutEffect(() => {
+    if (!pendingFocusAfterAdd) return;
+    const { ingredientId, triggerTescoSearch } = pendingFocusAfterAdd;
+    if (!recipeIngredients.some((ri) => ri.ingredientId === ingredientId)) {
+      return;
+    }
+    const input = quantityInputRefs.current.get(ingredientId);
+    input?.focus();
+    if (triggerTescoSearch) {
+      tescoSearchButtonRefs.current.get(ingredientId)?.click();
+    }
+    setPendingFocusAfterAdd(null);
+  }, [pendingFocusAfterAdd, recipeIngredients]);
 
   const persistIngredients = async (
     items: { ingredientId: string; quantity: string }[],
@@ -172,6 +200,10 @@ export function RecipeDetail({
     setAddIngredientSearch("");
     await persistIngredients(next);
     setPinnedIngredientId(id);
+    setPendingFocusAfterAdd({
+      ingredientId: id,
+      triggerTescoSearch: false,
+    });
   };
 
   const handleCreateIngredient = async (name: string) => {
@@ -199,6 +231,10 @@ export function RecipeDetail({
       setPinnedIngredientId(newIngredient.id);
       setAddIngredientSearch("");
       setAddIngredientOpen(false);
+      setPendingFocusAfterAdd({
+        ingredientId: newIngredient.id,
+        triggerTescoSearch: true,
+      });
     } finally {
       setCreatingIngredient(false);
     }
@@ -361,6 +397,11 @@ export function RecipeDetail({
                     />
                   </div>
                   <Input
+                    ref={(el) => {
+                      const m = quantityInputRefs.current;
+                      if (el) m.set(ri.ingredientId, el);
+                      else m.delete(ri.ingredientId);
+                    }}
                     value={quantityDraft[ri.ingredientId] ?? ri.quantity}
                     onChange={(e) =>
                       setQuantityDraft((prev) => ({
@@ -401,6 +442,11 @@ export function RecipeDetail({
                     ) : null}
                     {ing ? (
                       <Button
+                        ref={(el) => {
+                          const m = tescoSearchButtonRefs.current;
+                          if (el) m.set(ri.ingredientId, el);
+                          else m.delete(ri.ingredientId);
+                        }}
                         type="button"
                         variant="ghost"
                         size="sm"
