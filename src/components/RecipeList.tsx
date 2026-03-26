@@ -1,9 +1,9 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { ListCardSkeleton } from "@/components/ListCardSkeleton";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/Button";
 import { Input } from "@/components/ui/input";
-import { getData, type Recipe } from "@/lib/data";
+import { getData, updateRecipe, type Recipe } from "@/lib/data";
 
 interface RecipeListProps {
   refreshTrigger: number;
@@ -18,11 +18,24 @@ export function RecipeList({
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const editRef = useRef<HTMLSpanElement>(null);
 
   const q = searchQuery.trim().toLowerCase();
   const filtered = q
     ? recipes.filter((r) => r.name.toLowerCase().includes(q))
     : recipes;
+
+  useEffect(() => {
+    if (editingId && editRef.current) {
+      editRef.current.focus();
+      const sel = getSelection();
+      const range = document.createRange();
+      range.selectNodeContents(editRef.current);
+      sel?.removeAllRanges();
+      sel?.addRange(range);
+    }
+  }, [editingId]);
 
   useEffect(() => {
     let cancelled = false;
@@ -104,9 +117,59 @@ export function RecipeList({
                 key={recipe.id}
                 className="flex flex-col gap-2 rounded-md border bg-card p-3 sm:flex-row sm:items-center sm:justify-between sm:gap-2"
               >
-                <span className="min-w-0 truncate font-medium">
-                  {recipe.name}
-                </span>
+                {editingId === recipe.id ? (
+                  <span
+                    ref={editRef}
+                    contentEditable
+                    suppressContentEditableWarning
+                    className="min-w-0 flex-1 cursor-text truncate font-medium outline-none"
+                    onBlur={() => {
+                      const newName =
+                        editRef.current?.textContent?.trim() ?? recipe.name;
+                      setEditingId(null);
+                      if (newName && newName !== recipe.name) {
+                        updateRecipe(recipe.id, { name: newName })
+                          .then(() =>
+                            setRecipes((prev) =>
+                              [...prev]
+                                .map((r) =>
+                                  r.id === recipe.id
+                                    ? { ...r, name: newName }
+                                    : r,
+                                )
+                                .sort((a, b) => a.name.localeCompare(b.name)),
+                            ),
+                          )
+                          .catch((err) =>
+                            setError(
+                              err instanceof Error
+                                ? err.message
+                                : "Failed to update recipe",
+                            ),
+                          );
+                      }
+                    }}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") (e.target as HTMLElement).blur();
+                    }}
+                  >
+                    {recipe.name}
+                  </span>
+                ) : (
+                  <span
+                    role="button"
+                    tabIndex={0}
+                    className="min-w-0 cursor-pointer truncate font-medium hover:opacity-80"
+                    title="Click to edit"
+                    onClick={() => setEditingId(recipe.id)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" || e.key === " ")
+                        setEditingId(recipe.id);
+                    }}
+                  >
+                    {recipe.name}
+                  </span>
+                )}
                 <div className="flex flex-wrap items-center gap-2">
                   <Button
                     type="button"

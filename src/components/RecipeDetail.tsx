@@ -27,6 +27,7 @@ import {
   getData,
   setRecipeIngredients,
   updateIngredient,
+  updateRecipe,
   type Recipe,
   type Ingredient,
   type RecipeIngredient,
@@ -112,6 +113,9 @@ export function RecipeDetail({
     ingredientId: string;
     triggerTescoSearch: boolean;
   } | null>(null);
+  const [editingName, setEditingName] = useState(false);
+  const [nameError, setNameError] = useState("");
+  const nameEditRef = useRef<HTMLSpanElement>(null);
 
   const refreshIngredients = () =>
     getData().then((data) =>
@@ -122,6 +126,8 @@ export function RecipeDetail({
 
   useEffect(() => {
     setPinnedIngredientId(null);
+    setEditingName(false);
+    setNameError("");
     getData().then((data) => {
       const r = data.recipes.find((x) => x.id === recipeId) ?? null;
       setRecipe(r);
@@ -132,6 +138,16 @@ export function RecipeDetail({
       setIsLoading(false);
     });
   }, [recipeId]);
+
+  useEffect(() => {
+    if (!editingName || !nameEditRef.current) return;
+    nameEditRef.current.focus();
+    const sel = getSelection();
+    const range = document.createRange();
+    range.selectNodeContents(nameEditRef.current);
+    sel?.removeAllRanges();
+    sel?.addRange(range);
+  }, [editingName]);
 
   useEffect(() => {
     if (
@@ -508,9 +524,69 @@ export function RecipeDetail({
   return (
     <Card>
       <CardHeader className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <CardTitle className="min-w-0 truncate text-lg sm:text-base">
-          {recipe.name}
-        </CardTitle>
+        <div className="min-w-0 flex-1 space-y-1">
+          {editingName ? (
+            <CardTitle className="min-w-0 text-lg sm:text-base">
+              <span
+                ref={nameEditRef}
+                contentEditable
+                suppressContentEditableWarning
+                className="block cursor-text truncate outline-none"
+                onBlur={() => {
+                  const newName =
+                    nameEditRef.current?.textContent?.trim() ?? recipe.name;
+                  setEditingName(false);
+                  if (newName && newName !== recipe.name) {
+                    updateRecipe(recipe.id, { name: newName })
+                      .then(() => {
+                        setNameError("");
+                        setRecipe((prev) =>
+                          prev ? { ...prev, name: newName } : prev,
+                        );
+                        onUpdated?.();
+                      })
+                      .catch((err) =>
+                        setNameError(
+                          err instanceof Error
+                            ? err.message
+                            : "Failed to update recipe",
+                        ),
+                      );
+                  }
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") (e.target as HTMLElement).blur();
+                }}
+              >
+                {recipe.name}
+              </span>
+            </CardTitle>
+          ) : (
+            <CardTitle className="min-w-0 text-lg sm:text-base">
+              <span
+                role="button"
+                tabIndex={0}
+                className="block cursor-pointer truncate hover:opacity-80"
+                title="Click to edit"
+                onClick={() => {
+                  setNameError("");
+                  setEditingName(true);
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" || e.key === " ") {
+                    setNameError("");
+                    setEditingName(true);
+                  }
+                }}
+              >
+                {recipe.name}
+              </span>
+            </CardTitle>
+          )}
+          {nameError ? (
+            <p className="text-sm text-destructive">{nameError}</p>
+          ) : null}
+        </div>
         <div className="flex shrink-0 flex-wrap gap-2">
           <Button
             type="button"
