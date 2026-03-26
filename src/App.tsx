@@ -1,5 +1,12 @@
 import { useState, useEffect } from "react";
-import { BookOpen, Carrot, CalendarDays, LogOut, UserPlus } from "lucide-react";
+import {
+  BookOpen,
+  Carrot,
+  CalendarDays,
+  LogOut,
+  ShoppingCart,
+  UserPlus,
+} from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Dialog,
@@ -8,6 +15,8 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/Button";
+import { buttonVariants } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 import { Input } from "@/components/ui/input";
 import { Form, FormField, FormLabel, FormMessage } from "@/components/ui/form";
 import { RecipeForm } from "@/components/RecipeForm";
@@ -149,6 +158,18 @@ function AppContent() {
                   <UserPlus className="size-4" />
                 </Button>
               )}
+              <a
+                href="https://www.tesco.com/groceries/en-GB/"
+                target="_blank"
+                rel="noopener noreferrer"
+                className={cn(
+                  buttonVariants({ variant: "ghost", size: "sm" }),
+                  "px-2",
+                )}
+                aria-label="Open Tesco groceries in a new tab"
+              >
+                <ShoppingCart className="size-4" />
+              </a>
               <Button
                 variant="ghost"
                 size="sm"
