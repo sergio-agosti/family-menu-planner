@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { RemovablePill } from "@/components/RemovablePill";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/Button";
 import { Input } from "@/components/ui/input";
 import {
@@ -397,11 +398,27 @@ export function RecipeDetail({
 
   if (isLoading || !recipe) {
     return inline ? (
-      <p className="pt-2 text-sm text-muted-foreground">Loading...</p>
+      <div className="space-y-2 pt-2">
+        <Skeleton className="h-4 w-full" />
+        <Skeleton className="h-4 w-4/5" />
+        <Skeleton className="h-4 w-3/5" />
+        <Skeleton className="mt-4 h-4 w-28" />
+        <Skeleton className="h-11 w-full" />
+        <Skeleton className="h-11 w-full" />
+      </div>
     ) : (
       <Card>
-        <CardContent className="pt-6">
-          <p className="text-muted-foreground">Loading...</p>
+        <CardHeader className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <Skeleton className="h-7 w-56 max-w-full" />
+          <Skeleton className="h-9 w-9 shrink-0" />
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <Skeleton className="h-4 w-36" />
+          <div className="space-y-2">
+            {Array.from({ length: 4 }).map((_, i) => (
+              <Skeleton key={i} className="h-12 w-full" />
+            ))}
+          </div>
         </CardContent>
       </Card>
     );
