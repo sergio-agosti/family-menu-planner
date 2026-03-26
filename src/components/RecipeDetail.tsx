@@ -1,4 +1,10 @@
-import { useState, useEffect } from "react";
+import {
+  useState,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+} from "react";
 import { RemovablePill } from "@/components/RemovablePill";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/Button";
@@ -20,13 +26,13 @@ import {
   getData,
   setRecipeIngredients,
   updateIngredient,
+  updateRecipe,
   type Recipe,
   type Ingredient,
   type RecipeIngredient,
 } from "@/lib/data";
 import { getTescoSearchUrl } from "@/lib/utils";
 import {
-  Check,
   ChevronsUpDown,
   ClipboardPaste,
   ExternalLink,
@@ -34,6 +40,35 @@ import {
   Search,
   X,
 } from "lucide-react";
+
+function sortRecipeIngredientsForDisplay(
+  items: RecipeIngredient[],
+  nameById: Record<string, string>,
+  pinnedIngredientId: string | null,
+): RecipeIngredient[] {
+  const label = (ingredientId: string) =>
+    nameById[ingredientId] ?? "\uffff";
+
+  const byName = (a: RecipeIngredient, b: RecipeIngredient) =>
+    label(a.ingredientId).localeCompare(label(b.ingredientId), undefined, {
+      sensitivity: "base",
+    });
+
+  if (
+    !pinnedIngredientId ||
+    !items.some((ri) => ri.ingredientId === pinnedIngredientId)
+  ) {
+    return [...items].sort(byName);
+  }
+
+  const pinned = items.find(
+    (ri) => ri.ingredientId === pinnedIngredientId,
+  )!;
+  const rest = items.filter(
+    (ri) => ri.ingredientId !== pinnedIngredientId,
+  );
+  return [pinned, ...rest.sort(byName)];
+}
 
 interface RecipeDetailProps {
   recipeId: string;
@@ -59,8 +94,6 @@ export function RecipeDetail({
   >([]);
   const [isLoading, setIsLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [addIngredientId, setAddIngredientId] = useState("");
-  const [addQuantity, setAddQuantity] = useState("");
   const [addIngredientOpen, setAddIngredientOpen] = useState(false);
   const [addIngredientSearch, setAddIngredientSearch] = useState("");
   const [creatingIngredient, setCreatingIngredient] = useState(false);
@@ -68,6 +101,20 @@ export function RecipeDetail({
     {},
   );
   const [pastingId, setPastingId] = useState<string | null>(null);
+  const [pinnedIngredientId, setPinnedIngredientId] = useState<string | null>(
+    null,
+  );
+  const quantityInputRefs = useRef<Map<string, HTMLInputElement>>(new Map());
+  const tescoSearchButtonRefs = useRef<Map<string, HTMLButtonElement>>(
+    new Map(),
+  );
+  const [pendingFocusAfterAdd, setPendingFocusAfterAdd] = useState<{
+    ingredientId: string;
+    triggerTescoSearch: boolean;
+  } | null>(null);
+  const [editingName, setEditingName] = useState(false);
+  const [nameError, setNameError] = useState("");
+  const nameEditRef = useRef<HTMLSpanElement>(null);
 
   const refreshIngredients = () =>
     getData().then((data) =>
@@ -77,6 +124,9 @@ export function RecipeDetail({
     );
 
   useEffect(() => {
+    setPinnedIngredientId(null);
+    setEditingName(false);
+    setNameError("");
     getData().then((data) => {
       const r = data.recipes.find((x) => x.id === recipeId) ?? null;
       setRecipe(r);
@@ -87,6 +137,41 @@ export function RecipeDetail({
       setIsLoading(false);
     });
   }, [recipeId]);
+
+  useEffect(() => {
+    if (!editingName || !nameEditRef.current) return;
+    nameEditRef.current.focus();
+    const sel = getSelection();
+    const range = document.createRange();
+    range.selectNodeContents(nameEditRef.current);
+    sel?.removeAllRanges();
+    sel?.addRange(range);
+  }, [editingName]);
+
+  useEffect(() => {
+    if (
+      pinnedIngredientId &&
+      !recipeIngredients.some(
+        (ri) => ri.ingredientId === pinnedIngredientId,
+      )
+    ) {
+      setPinnedIngredientId(null);
+    }
+  }, [recipeIngredients, pinnedIngredientId]);
+
+  useLayoutEffect(() => {
+    if (!pendingFocusAfterAdd) return;
+    const { ingredientId, triggerTescoSearch } = pendingFocusAfterAdd;
+    if (!recipeIngredients.some((ri) => ri.ingredientId === ingredientId)) {
+      return;
+    }
+    const input = quantityInputRefs.current.get(ingredientId);
+    input?.focus();
+    if (triggerTescoSearch) {
+      tescoSearchButtonRefs.current.get(ingredientId)?.click();
+    }
+    setPendingFocusAfterAdd(null);
+  }, [pendingFocusAfterAdd, recipeIngredients]);
 
   const persistIngredients = async (
     items: { ingredientId: string; quantity: string }[],
@@ -103,26 +188,37 @@ export function RecipeDetail({
   };
 
   const handleRemove = (ingredientId: string) => {
+    if (ingredientId === pinnedIngredientId) setPinnedIngredientId(null);
     const next = recipeIngredients
       .filter((ri) => ri.ingredientId !== ingredientId)
       .map((ri) => ({ ingredientId: ri.ingredientId, quantity: ri.quantity }));
     persistIngredients(next);
   };
 
-  const handleAdd = () => {
-    const id = addIngredientId.trim();
+  const addIngredientToRecipe = async (ingredientId: string) => {
+    if (saving) return;
+    const id = ingredientId.trim();
     if (!id) return;
+    if (recipeIngredients.some((ri) => ri.ingredientId === id)) {
+      setAddIngredientOpen(false);
+      setAddIngredientSearch("");
+      return;
+    }
     const next = [
       ...recipeIngredients.map((ri) => ({
         ingredientId: ri.ingredientId,
         quantity: ri.quantity,
       })),
-      { ingredientId: id, quantity: addQuantity.trim() },
+      { ingredientId: id, quantity: "" },
     ];
-    setAddIngredientId("");
-    setAddQuantity("");
     setAddIngredientOpen(false);
-    persistIngredients(next);
+    setAddIngredientSearch("");
+    await persistIngredients(next);
+    setPinnedIngredientId(id);
+    setPendingFocusAfterAdd({
+      ingredientId: id,
+      triggerTescoSearch: false,
+    });
   };
 
   const handleCreateIngredient = async (name: string) => {
@@ -134,18 +230,26 @@ export function RecipeDetail({
       setIngredients((prev) =>
         [...prev, newIngredient].sort((a, b) => a.name.localeCompare(b.name)),
       );
+      if (recipeIngredients.some((ri) => ri.ingredientId === newIngredient.id)) {
+        setAddIngredientSearch("");
+        setAddIngredientOpen(false);
+        return;
+      }
       const next = [
         ...recipeIngredients.map((ri) => ({
           ingredientId: ri.ingredientId,
           quantity: ri.quantity,
         })),
-        { ingredientId: newIngredient.id, quantity: addQuantity.trim() },
+        { ingredientId: newIngredient.id, quantity: "" },
       ];
       await persistIngredients(next);
-      setAddIngredientId("");
-      setAddQuantity("");
+      setPinnedIngredientId(newIngredient.id);
       setAddIngredientSearch("");
       setAddIngredientOpen(false);
+      setPendingFocusAfterAdd({
+        ingredientId: newIngredient.id,
+        triggerTescoSearch: true,
+      });
     } finally {
       setCreatingIngredient(false);
     }
@@ -191,12 +295,25 @@ export function RecipeDetail({
   };
 
   const byId = Object.fromEntries(ingredients.map((i) => [i.id, i]));
+  const ingredientNameById = useMemo(
+    () => Object.fromEntries(ingredients.map((i) => [i.id, i.name])),
+    [ingredients],
+  );
+  const displayedRecipeIngredients = useMemo(
+    () =>
+      sortRecipeIngredientsForDisplay(
+        recipeIngredients,
+        ingredientNameById,
+        pinnedIngredientId,
+      ),
+    [recipeIngredients, ingredientNameById, pinnedIngredientId],
+  );
 
   const ingredientsBlock = (
     <div className="flex flex-col gap-y-2">
       {!inline && <h4 className="text-sm font-medium">Ingredients</h4>}
       <div className="grid grid-cols-[2fr_1fr_auto] items-center gap-x-2 gap-y-2">
-        <div className="col-span-full grid grid-cols-subgrid items-center gap-x-2 text-sm">
+        <div className="col-span-full text-sm">
           <Popover
             open={addIngredientOpen}
             onOpenChange={(open) => {
@@ -211,11 +328,7 @@ export function RecipeDetail({
                 aria-expanded={addIngredientOpen}
                 className="h-9 w-full min-w-0 justify-between font-normal"
               >
-                <span className="truncate">
-                  {addIngredientId
-                    ? (byId[addIngredientId]?.name ?? addIngredientId)
-                    : "Add ingredient…"}
-                </span>
+                <span className="truncate">Add ingredient…</span>
                 <ChevronsUpDown className="ml-2 size-4 shrink-0 opacity-50" />
               </Button>
             </PopoverTrigger>
@@ -225,7 +338,6 @@ export function RecipeDetail({
               align="start"
             >
               <Command
-                value={addIngredientId}
                 filter={(value, search, keywords) => {
                   if (value === "__create__") return 1;
                   const s = (search ?? "").trim().toLowerCase();
@@ -248,18 +360,8 @@ export function RecipeDetail({
                       key={ing.id}
                       value={ing.id}
                       keywords={[ing.name]}
-                      onSelect={() => {
-                        setAddIngredientId(ing.id);
-                        setAddIngredientOpen(false);
-                      }}
+                      onSelect={() => addIngredientToRecipe(ing.id)}
                     >
-                      <Check
-                        className={
-                          addIngredientId === ing.id
-                            ? "mr-2 size-4 opacity-100"
-                            : "mr-2 size-4 opacity-0"
-                        }
-                      />
                       {ing.name}
                     </CommandItem>
                   ))}
@@ -272,7 +374,7 @@ export function RecipeDetail({
                     variant="ghost"
                     size="sm"
                     className="w-full justify-start gap-2 font-normal"
-                    disabled={creatingIngredient}
+                    disabled={creatingIngredient || saving}
                     onClick={() => handleCreateIngredient(addIngredientSearch)}
                   >
                     <Plus className="size-4 shrink-0" />
@@ -282,25 +384,6 @@ export function RecipeDetail({
               )}
             </PopoverContent>
           </Popover>
-          <Input
-            placeholder="Qty"
-            value={addQuantity}
-            onChange={(e) => setAddQuantity(e.target.value)}
-            className="h-8 w-full justify-self-end text-right text-sm"
-          />
-          <div className="flex items-center justify-end">
-            <Button
-              type="button"
-              variant="ghost"
-              size="sm"
-              className="h-9 w-9 touch-manipulation p-0 text-muted-foreground"
-              title="Add ingredient"
-              onClick={handleAdd}
-              disabled={saving || !addIngredientId.trim() || creatingIngredient}
-            >
-              <Plus className="size-4" />
-            </Button>
-          </div>
         </div>
         <ul className="col-span-full grid grid-cols-subgrid items-center gap-x-2 gap-y-2">
           {recipeIngredients.length === 0 ? (
@@ -311,7 +394,7 @@ export function RecipeDetail({
               No ingredients yet.
             </li>
           ) : (
-            recipeIngredients.map((ri, index) => {
+            displayedRecipeIngredients.map((ri, index) => {
               const ing = byId[ri.ingredientId];
               const label = ing ? ing.name : "(unknown)";
               return (
@@ -329,6 +412,11 @@ export function RecipeDetail({
                     />
                   </div>
                   <Input
+                    ref={(el) => {
+                      const m = quantityInputRefs.current;
+                      if (el) m.set(ri.ingredientId, el);
+                      else m.delete(ri.ingredientId);
+                    }}
                     value={quantityDraft[ri.ingredientId] ?? ri.quantity}
                     onChange={(e) =>
                       setQuantityDraft((prev) => ({
@@ -369,6 +457,11 @@ export function RecipeDetail({
                     ) : null}
                     {ing ? (
                       <Button
+                        ref={(el) => {
+                          const m = tescoSearchButtonRefs.current;
+                          if (el) m.set(ri.ingredientId, el);
+                          else m.delete(ri.ingredientId);
+                        }}
                         type="button"
                         variant="ghost"
                         size="sm"
@@ -414,9 +507,69 @@ export function RecipeDetail({
   return (
     <Card>
       <CardHeader className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <CardTitle className="min-w-0 truncate text-lg sm:text-base">
-          {recipe.name}
-        </CardTitle>
+        <div className="min-w-0 flex-1 space-y-1">
+          {editingName ? (
+            <CardTitle className="min-w-0 text-lg sm:text-base">
+              <span
+                ref={nameEditRef}
+                contentEditable
+                suppressContentEditableWarning
+                className="block cursor-text truncate outline-none"
+                onBlur={() => {
+                  const newName =
+                    nameEditRef.current?.textContent?.trim() ?? recipe.name;
+                  setEditingName(false);
+                  if (newName && newName !== recipe.name) {
+                    updateRecipe(recipe.id, { name: newName })
+                      .then(() => {
+                        setNameError("");
+                        setRecipe((prev) =>
+                          prev ? { ...prev, name: newName } : prev,
+                        );
+                        onUpdated?.();
+                      })
+                      .catch((err) =>
+                        setNameError(
+                          err instanceof Error
+                            ? err.message
+                            : "Failed to update recipe",
+                        ),
+                      );
+                  }
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") (e.target as HTMLElement).blur();
+                }}
+              >
+                {recipe.name}
+              </span>
+            </CardTitle>
+          ) : (
+            <CardTitle className="min-w-0 text-lg sm:text-base">
+              <span
+                role="button"
+                tabIndex={0}
+                className="block cursor-pointer truncate hover:opacity-80"
+                title="Click to edit"
+                onClick={() => {
+                  setNameError("");
+                  setEditingName(true);
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" || e.key === " ") {
+                    setNameError("");
+                    setEditingName(true);
+                  }
+                }}
+              >
+                {recipe.name}
+              </span>
+            </CardTitle>
+          )}
+          {nameError ? (
+            <p className="text-sm text-destructive">{nameError}</p>
+          ) : null}
+        </div>
         <div className="flex shrink-0 flex-wrap gap-2">
           <Button
             type="button"
