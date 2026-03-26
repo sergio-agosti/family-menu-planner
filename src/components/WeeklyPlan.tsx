@@ -41,6 +41,7 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import {
+  addRecipe,
   getData,
   getPlanForDateRange,
   setSlotRecipes,
@@ -313,14 +314,30 @@ function AddRecipeSlotPicker({
   disabled,
   ariaLabel,
   onPick,
+  onCreateNewRecipe,
 }: {
   recipes: Recipe[];
   disabled: boolean;
   ariaLabel: string;
   onPick: (recipeId: string) => void;
+  onCreateNewRecipe: (name: string) => Promise<void>;
 }) {
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState("");
+  const [creating, setCreating] = useState(false);
+
+  const handleCreate = async () => {
+    const name = search.trim();
+    if (!name || creating) return;
+    setCreating(true);
+    try {
+      await onCreateNewRecipe(name);
+      setOpen(false);
+      setSearch("");
+    } finally {
+      setCreating(false);
+    }
+  };
 
   return (
     <Popover
@@ -380,6 +397,21 @@ function AddRecipeSlotPicker({
             ))}
           </CommandList>
         </Command>
+        {search.trim() && (
+          <div className="border-t p-1">
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              className="w-full justify-start gap-2 font-normal"
+              disabled={creating || disabled}
+              onClick={() => void handleCreate()}
+            >
+              <Plus className="size-4 shrink-0" />
+              Add as new recipe
+            </Button>
+          </div>
+        )}
       </PopoverContent>
     </Popover>
   );
@@ -388,9 +420,15 @@ function AddRecipeSlotPicker({
 interface WeeklyPlanProps {
   refreshTrigger: number;
   onOpenRecipe?: (recipeId: string) => void;
+  /** Bump global data (e.g. recipe list) after creating a recipe from the plan picker. */
+  onRecipeAdded?: () => void;
 }
 
-export function WeeklyPlan({ refreshTrigger, onOpenRecipe }: WeeklyPlanProps) {
+export function WeeklyPlan({
+  refreshTrigger,
+  onOpenRecipe,
+  onRecipeAdded,
+}: WeeklyPlanProps) {
   const [recipes, setRecipes] = useState<Recipe[]>([]);
   const [plan, setPlan] = useState<Record<string, DayPlan>>({});
   const [weekStart, setWeekStart] = useState<Date>(() => getMonday(new Date()));
@@ -841,9 +879,7 @@ export function WeeklyPlan({ refreshTrigger, onOpenRecipe }: WeeklyPlanProps) {
                                   </span>
                                   <AddRecipeSlotPicker
                                     recipes={sortedRecipes}
-                                    disabled={
-                                      isSaving || recipes.length === 0
-                                    }
+                                    disabled={isSaving}
                                     ariaLabel={`Add recipe to ${targetLabel}`}
                                     onPick={(recipeId) =>
                                       void addRecipeToSlot(
@@ -853,6 +889,29 @@ export function WeeklyPlan({ refreshTrigger, onOpenRecipe }: WeeklyPlanProps) {
                                         recipeId,
                                       )
                                     }
+                                    onCreateNewRecipe={async (name) => {
+                                      const recipe = await addRecipe(
+                                        name.trim(),
+                                      );
+                                      setRecipes((prev) =>
+                                        [
+                                          ...prev.filter(
+                                            (r) => r.id !== recipe.id,
+                                          ),
+                                          recipe,
+                                        ].sort((a, b) =>
+                                          a.name.localeCompare(b.name),
+                                        ),
+                                      );
+                                      await addRecipeToSlot(
+                                        dateKey,
+                                        key,
+                                        targetKey,
+                                        recipe.id,
+                                      );
+                                      onOpenRecipe?.(recipe.id);
+                                      onRecipeAdded?.();
+                                    }}
                                   />
                                 </div>
                                 <div className="flex w-full min-w-0 flex-col gap-1">

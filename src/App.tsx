@@ -292,6 +292,7 @@ function AppContent() {
             <WeeklyPlan
               refreshTrigger={refreshTrigger}
               onOpenRecipe={setSelectedRecipeId}
+              onRecipeAdded={refresh}
             />
           </TabsContent>
         </Tabs>
