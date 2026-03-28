@@ -29,7 +29,7 @@ export function RemovablePill({
       role={onLabelClick ? "button" : undefined}
       tabIndex={onLabelClick ? 0 : undefined}
       className={cn(
-        "w-full justify-between gap-1 px-2.5 py-1.5 text-xs font-normal",
+        "w-full justify-between gap-0.5 pl-2 pr-1 py-1 text-xs font-normal",
         onLabelClick && "cursor-pointer",
         className,
       )}
@@ -56,8 +56,8 @@ export function RemovablePill({
       <Button
         type="button"
         variant="ghost"
-        size="sm"
-        className="h-6 w-6 shrink-0 cursor-pointer touch-manipulation rounded-full p-0 text-base leading-none text-muted-foreground hover:bg-muted hover:text-destructive sm:h-5 sm:w-5 sm:text-sm"
+        size="icon"
+        className="h-6 w-6 shrink-0 cursor-pointer touch-manipulation gap-0 rounded-full p-0 text-xl leading-none text-muted-foreground hover:bg-muted hover:text-destructive"
         onPointerDown={(e) => e.stopPropagation()}
         onClick={(e) => {
           e.stopPropagation();
