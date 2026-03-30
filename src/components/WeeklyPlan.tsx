@@ -40,6 +40,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
+import { RecipeDifficultyDot } from "@/components/RecipeDifficultyDot";
 import {
   addRecipe,
   getData,
@@ -49,6 +50,7 @@ import {
   type DayPlan,
   type MealType,
   type Recipe,
+  type RecipeDifficulty,
   type TargetType,
 } from "@/lib/data";
 
@@ -166,6 +168,7 @@ interface PlanRecipeDragData {
   recipeId: string;
   from: PlanSlotRef;
   label: string;
+  difficulty: RecipeDifficulty;
 }
 
 function patchPlanRemove(
@@ -259,6 +262,7 @@ function DraggablePlanRecipe({
   recipeId,
   from,
   label,
+  difficulty,
   disabled,
   onRemove,
   onLabelClick,
@@ -266,6 +270,7 @@ function DraggablePlanRecipe({
   recipeId: string;
   from: PlanSlotRef;
   label: string;
+  difficulty: RecipeDifficulty;
   disabled: boolean;
   onRemove: () => void;
   onLabelClick?: () => void;
@@ -280,6 +285,7 @@ function DraggablePlanRecipe({
       recipeId,
       from,
       label,
+      difficulty,
     } satisfies PlanRecipeDragData,
   });
 
@@ -298,6 +304,7 @@ function DraggablePlanRecipe({
     >
       <RemovablePill
         label={label}
+        difficulty={difficulty}
         onRemove={onRemove}
         onLabelClick={onLabelClick}
         disabled={disabled}
@@ -436,7 +443,10 @@ export function WeeklyPlan({
   const [savingSlots, setSavingSlots] = useState<string[]>([]);
   const [collapsedColumns, setCollapsedColumns] =
     useState<Record<MealType, boolean>>(loadCollapsedColumns);
-  const [overlayLabel, setOverlayLabel] = useState<string | null>(null);
+  const [dragOverlay, setDragOverlay] = useState<{
+    label: string;
+    difficulty: RecipeDifficulty;
+  } | null>(null);
 
   const planRef = useRef(plan);
   planRef.current = plan;
@@ -624,11 +634,12 @@ export function WeeklyPlan({
 
   const handleDragStart = (event: DragStartEvent) => {
     const data = event.active.data.current as PlanRecipeDragData | undefined;
-    if (data?.type === "plan-recipe") setOverlayLabel(data.label);
+    if (data?.type === "plan-recipe")
+      setDragOverlay({ label: data.label, difficulty: data.difficulty });
   };
 
   const handleDragEnd = (event: DragEndEvent) => {
-    setOverlayLabel(null);
+    setDragOverlay(null);
     const { active, over } = event;
     if (!over) return;
     const data = active.data.current as PlanRecipeDragData | undefined;
@@ -639,7 +650,7 @@ export function WeeklyPlan({
   };
 
   const handleDragCancel = () => {
-    setOverlayLabel(null);
+    setDragOverlay(null);
   };
 
   const recipeById = useMemo(
@@ -934,6 +945,9 @@ export function WeeklyPlan({
                                           recipeId={id}
                                           from={from}
                                           label={r?.name ?? id}
+                                          difficulty={
+                                            r?.difficulty ?? "easy"
+                                          }
                                           disabled={isSaving}
                                           onRemove={() =>
                                             removeRecipeFromSlot(
@@ -964,12 +978,15 @@ export function WeeklyPlan({
             })}
           </div>
           <DragOverlay dropAnimation={null}>
-            {overlayLabel ? (
+            {dragOverlay ? (
               <Badge
                 variant="secondary"
-                className="max-w-48 cursor-grabbing truncate px-2.5 py-1.5 text-xs font-normal shadow-md"
+                className="max-w-48 cursor-grabbing gap-1 px-2.5 py-1.5 text-xs font-normal shadow-md"
               >
-                {overlayLabel}
+                <RecipeDifficultyDot difficulty={dragOverlay.difficulty} />
+                <span className="min-w-0 flex-1 truncate">
+                  {dragOverlay.label}
+                </span>
               </Badge>
             ) : null}
           </DragOverlay>

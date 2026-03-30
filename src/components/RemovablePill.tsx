@@ -1,9 +1,13 @@
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/Button";
+import { RecipeDifficultyDot } from "@/components/RecipeDifficultyDot";
 import { cn } from "@/lib/utils";
+import type { RecipeDifficulty } from "@/lib/data";
 
 interface RemovablePillProps {
   label: string;
+  /** When set (e.g. recipe pills), shows a semaphore dot before the label. */
+  difficulty?: RecipeDifficulty;
   onRemove: () => void;
   /** Optional click on the label (e.g. open recipe). Remove button still calls onRemove. */
   onLabelClick?: () => void;
@@ -16,6 +20,7 @@ interface RemovablePillProps {
 
 export function RemovablePill({
   label,
+  difficulty,
   onRemove,
   onLabelClick,
   disabled = false,
@@ -47,11 +52,14 @@ export function RemovablePill({
     >
       <span
         className={cn(
-          "truncate",
+          "flex min-w-0 items-center gap-1",
           fullWidth ? "min-w-0 flex-1" : "max-w-24 sm:max-w-32",
         )}
       >
-        {label}
+        {difficulty !== undefined ? (
+          <RecipeDifficultyDot difficulty={difficulty} />
+        ) : null}
+        <span className="min-w-0 flex-1 truncate">{label}</span>
       </span>
       <Button
         type="button"

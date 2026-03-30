@@ -1,8 +1,21 @@
 import { supabase } from "@/lib/supabase";
 
+export type RecipeDifficulty = "easy" | "medium" | "difficult";
+
+const RECIPE_DIFFICULTY_LABELS: Record<RecipeDifficulty, string> = {
+  easy: "Easy",
+  medium: "Medium",
+  difficult: "Difficult",
+};
+
+export function recipeDifficultyLabel(d: RecipeDifficulty): string {
+  return RECIPE_DIFFICULTY_LABELS[d];
+}
+
 export interface Recipe {
   id: string;
   name: string;
+  difficulty: RecipeDifficulty;
   createdAt: string;
 }
 
@@ -133,12 +146,25 @@ export async function acceptPendingInvites(): Promise<void> {
   await client.from("household_invites").delete().eq("email", email);
 }
 
+function normalizeDifficulty(
+  value: string | null | undefined,
+): RecipeDifficulty {
+  if (value === "medium" || value === "difficult") return value;
+  return "easy";
+}
+
 function mapRecipe(row: {
   id: string;
   name: string;
+  difficulty?: string | null;
   created_at: string;
 }): Recipe {
-  return { id: row.id, name: row.name, createdAt: row.created_at };
+  return {
+    id: row.id,
+    name: row.name,
+    difficulty: normalizeDifficulty(row.difficulty),
+    createdAt: row.created_at,
+  };
 }
 
 function mapIngredient(row: {
@@ -205,7 +231,7 @@ export async function getData(): Promise<AppData> {
     await Promise.all([
       client
         .from("recipes")
-        .select("id, name, created_at")
+        .select("id, name, difficulty, created_at")
         .order("created_at", { ascending: true }),
       client.from("ingredients").select("id, name, tesco_url").order("name"),
       client
@@ -243,13 +269,21 @@ export async function getRecipes(): Promise<{ recipes: Recipe[] }> {
   return { recipes: data.recipes };
 }
 
-export async function addRecipe(name: string): Promise<Recipe> {
+export async function addRecipe(
+  name: string,
+  difficulty: RecipeDifficulty = "easy",
+): Promise<Recipe> {
   const client = ensureSupabase();
   const householdId = await getCurrentHouseholdId();
   const { data, error } = await client
     .from("recipes")
-    .insert({ id: crypto.randomUUID(), name, household_id: householdId })
-    .select("id, name, created_at")
+    .insert({
+      id: crypto.randomUUID(),
+      name,
+      difficulty,
+      household_id: householdId,
+    })
+    .select("id, name, difficulty, created_at")
     .single();
 
   if (error) throw new Error(error.message);
@@ -258,14 +292,14 @@ export async function addRecipe(name: string): Promise<Recipe> {
 
 export async function updateRecipe(
   id: string,
-  updates: { name?: string },
+  updates: { name?: string; difficulty?: RecipeDifficulty },
 ): Promise<void> {
-  if (updates.name === undefined) return;
+  if (updates.name === undefined && updates.difficulty === undefined) return;
   const client = ensureSupabase();
-  const { error } = await client
-    .from("recipes")
-    .update({ name: updates.name })
-    .eq("id", id);
+  const payload: { name?: string; difficulty?: RecipeDifficulty } = {};
+  if (updates.name !== undefined) payload.name = updates.name;
+  if (updates.difficulty !== undefined) payload.difficulty = updates.difficulty;
+  const { error } = await client.from("recipes").update(payload).eq("id", id);
   if (error) throw new Error(error.message);
 }
 

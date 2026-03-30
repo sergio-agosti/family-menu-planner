@@ -10,6 +10,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/Button";
 import { Input } from "@/components/ui/input";
+import { RecipeDifficultyPicker } from "@/components/RecipeDifficultyDot";
 import {
   Command,
   CommandEmpty,
@@ -29,6 +30,7 @@ import {
   updateIngredient,
   updateRecipe,
   type Recipe,
+  type RecipeDifficulty,
   type Ingredient,
   type RecipeIngredient,
 } from "@/lib/data";
@@ -115,6 +117,7 @@ export function RecipeDetail({
   } | null>(null);
   const [editingName, setEditingName] = useState(false);
   const [nameError, setNameError] = useState("");
+  const [difficultyError, setDifficultyError] = useState("");
   const nameEditRef = useRef<HTMLSpanElement>(null);
 
   const refreshIngredients = () =>
@@ -128,6 +131,7 @@ export function RecipeDetail({
     setPinnedIngredientId(null);
     setEditingName(false);
     setNameError("");
+    setDifficultyError("");
     getData().then((data) => {
       const r = data.recipes.find((x) => x.id === recipeId) ?? null;
       setRecipe(r);
@@ -502,7 +506,7 @@ export function RecipeDetail({
     ) : (
       <Card>
         <CardHeader className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <Skeleton className="h-7 w-56 max-w-full" />
+          <Skeleton className="h-8 w-56 max-w-full" />
           <Skeleton className="h-9 w-9 shrink-0" />
         </CardHeader>
         <CardContent className="space-y-4">
@@ -523,82 +527,111 @@ export function RecipeDetail({
 
   return (
     <Card>
-      <CardHeader className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div className="min-w-0 flex-1 space-y-1">
-          {editingName ? (
-            <CardTitle className="min-w-0 text-lg sm:text-base">
-              <span
-                ref={nameEditRef}
-                contentEditable
-                suppressContentEditableWarning
-                className="block cursor-text truncate outline-none"
-                onBlur={() => {
-                  const newName =
-                    nameEditRef.current?.textContent?.trim() ?? recipe.name;
-                  setEditingName(false);
-                  if (newName && newName !== recipe.name) {
-                    updateRecipe(recipe.id, { name: newName })
-                      .then(() => {
-                        setNameError("");
-                        setRecipe((prev) =>
-                          prev ? { ...prev, name: newName } : prev,
+      <CardHeader className="flex flex-col gap-2 space-y-0">
+        <div className="flex min-w-0 items-center gap-2 sm:gap-3">
+          <div className="min-w-0 flex-1">
+            {editingName ? (
+              <CardTitle className="min-w-0 text-xl leading-tight sm:text-lg">
+                <span
+                  ref={nameEditRef}
+                  contentEditable
+                  suppressContentEditableWarning
+                  className="block cursor-text truncate outline-none"
+                  onBlur={() => {
+                    const newName =
+                      nameEditRef.current?.textContent?.trim() ?? recipe.name;
+                    setEditingName(false);
+                    if (newName && newName !== recipe.name) {
+                      updateRecipe(recipe.id, { name: newName })
+                        .then(() => {
+                          setNameError("");
+                          setRecipe((prev) =>
+                            prev ? { ...prev, name: newName } : prev,
+                          );
+                          onUpdated?.();
+                        })
+                        .catch((err) =>
+                          setNameError(
+                            err instanceof Error
+                              ? err.message
+                              : "Failed to update recipe",
+                          ),
                         );
-                        onUpdated?.();
-                      })
-                      .catch((err) =>
-                        setNameError(
-                          err instanceof Error
-                            ? err.message
-                            : "Failed to update recipe",
-                        ),
-                      );
-                  }
-                }}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter") (e.target as HTMLElement).blur();
-                }}
-              >
-                {recipe.name}
-              </span>
-            </CardTitle>
-          ) : (
-            <CardTitle className="min-w-0 text-lg sm:text-base">
-              <span
-                role="button"
-                tabIndex={0}
-                className="block cursor-pointer truncate hover:opacity-80"
-                title="Click to edit"
-                onClick={() => {
-                  setNameError("");
-                  setEditingName(true);
-                }}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter" || e.key === " ") {
+                    }
+                  }}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") (e.target as HTMLElement).blur();
+                  }}
+                >
+                  {recipe.name}
+                </span>
+              </CardTitle>
+            ) : (
+              <CardTitle className="min-w-0 text-xl leading-tight sm:text-lg">
+                <span
+                  role="button"
+                  tabIndex={0}
+                  className="block cursor-pointer truncate hover:opacity-80"
+                  title="Click to edit"
+                  onClick={() => {
                     setNameError("");
                     setEditingName(true);
-                  }
-                }}
-              >
-                {recipe.name}
-              </span>
-            </CardTitle>
-          )}
-          {nameError ? (
-            <p className="text-sm text-destructive">{nameError}</p>
-          ) : null}
-        </div>
-        <div className="flex shrink-0 flex-wrap gap-2">
+                  }}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" || e.key === " ") {
+                      setNameError("");
+                      setEditingName(true);
+                    }
+                  }}
+                >
+                  {recipe.name}
+                </span>
+              </CardTitle>
+            )}
+          </div>
+          <RecipeDifficultyPicker
+            value={recipe.difficulty}
+            disabled={saving}
+            onChange={(next) => {
+              if (next === recipe.difficulty) return;
+              setDifficultyError("");
+              updateRecipe(recipe.id, { difficulty: next })
+                .then(() => {
+                  setRecipe((prev) =>
+                    prev ? { ...prev, difficulty: next } : prev,
+                  );
+                  onUpdated?.();
+                })
+                .catch((err) =>
+                  setDifficultyError(
+                    err instanceof Error
+                      ? err.message
+                      : "Failed to update difficulty",
+                  ),
+                );
+            }}
+          />
           <Button
             type="button"
             variant="ghost"
             size="sm"
             onClick={onClose}
-            className="h-9 w-9 touch-manipulation p-0"
+            className="h-9 w-9 shrink-0 touch-manipulation p-0"
             title="Close"
           >
             <X className="size-4" />
           </Button>
         </div>
+        {nameError || difficultyError ? (
+          <div className="space-y-1">
+            {nameError ? (
+              <p className="text-sm text-destructive">{nameError}</p>
+            ) : null}
+            {difficultyError ? (
+              <p className="text-xs text-destructive">{difficultyError}</p>
+            ) : null}
+          </div>
+        ) : null}
       </CardHeader>
       <CardContent className="space-y-4">{ingredientsBlock}</CardContent>
     </Card>

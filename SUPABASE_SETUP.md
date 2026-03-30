@@ -33,6 +33,7 @@ create table if not exists public.recipes (
   id uuid primary key default gen_random_uuid(),
   household_id uuid not null references public.households(id) on delete cascade,
   name text not null,
+  difficulty text not null default 'easy' check (difficulty in ('easy','medium','difficult')),
   created_at timestamptz not null default now(),
   unique (household_id, name)
 );
@@ -114,3 +115,13 @@ create policy "Members access plans" on public.plans for all to authenticated
 ```
 
 5. Run the app with `pnpm run dev`. Sign in (email or Google); the app creates a default household and profile on first use. Use **Invite** to add another user (e.g. your wife) to the same household.
+
+6. **Existing databases** (if you already ran the SQL above before `difficulty` existed): in the SQL Editor run once:
+
+```sql
+alter table public.recipes
+  add column if not exists difficulty text not null default 'easy'
+  check (difficulty in ('easy','medium','difficult'));
+```
+
+If `recipes` already had a `difficulty` column from a partial migration, adjust as needed; the app expects `easy`, `medium`, or `difficult`.
