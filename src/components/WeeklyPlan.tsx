@@ -24,7 +24,7 @@ import {
 import { Plus, ChevronDown, ChevronRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { RemovablePill } from "@/components/RemovablePill";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/Button";
@@ -55,6 +55,7 @@ import {
 } from "@/lib/data";
 
 const MEAL_COLUMNS_STORAGE_KEY = "family-menu-planner:meal-columns-collapsed";
+const PLAN_FIRST_DAY_STORAGE_KEY = "family-menu-planner:plan-first-day";
 
 const MEAL_TYPES: { key: MealType; label: string }[] = [
   { key: "breakfast", label: "Breakfast" },
@@ -82,13 +83,37 @@ const TARGETS: { key: TargetType; label: string }[] = [
   { key: "kids", label: "Kids" },
 ];
 
-function getMonday(d: Date): Date {
+function startOfDay(d: Date): Date {
   const x = new Date(d);
-  const day = x.getDay();
-  const diff = day === 0 ? -6 : 1 - day;
-  x.setDate(x.getDate() + diff);
   x.setHours(0, 0, 0, 0);
   return x;
+}
+
+function parseDateKey(dateKey: string): Date | null {
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(dateKey.trim());
+  if (!match) return null;
+  const year = Number(match[1]);
+  const month = Number(match[2]);
+  const day = Number(match[3]);
+  const parsed = new Date(year, month - 1, day);
+  if (
+    parsed.getFullYear() !== year ||
+    parsed.getMonth() !== month - 1 ||
+    parsed.getDate() !== day
+  ) {
+    return null;
+  }
+  return startOfDay(parsed);
+}
+
+function loadFirstDay(): Date {
+  try {
+    const raw = localStorage.getItem(PLAN_FIRST_DAY_STORAGE_KEY);
+    if (!raw) return startOfDay(new Date());
+    return parseDateKey(raw) ?? startOfDay(new Date());
+  } catch {
+    return startOfDay(new Date());
+  }
 }
 
 function formatDay(d: Date): string {
@@ -438,7 +463,7 @@ export function WeeklyPlan({
 }: WeeklyPlanProps) {
   const [recipes, setRecipes] = useState<Recipe[]>([]);
   const [plan, setPlan] = useState<Record<string, DayPlan>>({});
-  const [weekStart, setWeekStart] = useState<Date>(() => getMonday(new Date()));
+  const [weekStart, setWeekStart] = useState<Date>(loadFirstDay);
   const [loading, setLoading] = useState(true);
   const [savingSlots, setSavingSlots] = useState<string[]>([]);
   const [collapsedColumns, setCollapsedColumns] =
@@ -466,7 +491,7 @@ export function WeeklyPlan({
   const days = useMemo(() => {
     const out: Date[] = [];
     const start = new Date(weekStart);
-    for (let i = 0; i < 14; i++) {
+    for (let i = 0; i < 7; i++) {
       const d = new Date(start);
       d.setDate(start.getDate() + i);
       out.push(d);
@@ -474,10 +499,18 @@ export function WeeklyPlan({
     return out;
   }, [weekStart]);
 
+  useEffect(() => {
+    try {
+      localStorage.setItem(PLAN_FIRST_DAY_STORAGE_KEY, toLocalDateKey(weekStart));
+    } catch {
+      /* ignore */
+    }
+  }, [weekStart]);
+
   const refetchPlanRange = useCallback(async () => {
     const start = new Date(weekStart);
     const end = new Date(weekStart);
-    end.setDate(end.getDate() + 13);
+    end.setDate(end.getDate() + 6);
     const planData = await getPlanForDateRange(start, end);
     setPlan(planData);
   }, [weekStart]);
@@ -487,7 +520,7 @@ export function WeeklyPlan({
     setLoading(true);
     const start = new Date(weekStart);
     const end = new Date(weekStart);
-    end.setDate(end.getDate() + 13);
+    end.setDate(end.getDate() + 6);
     Promise.all([getData(), getPlanForDateRange(start, end)])
       .then(([data, planData]) => {
         if (cancelled) return;
@@ -671,21 +704,24 @@ export function WeeklyPlan({
 
   const goPrev = () => {
     const d = new Date(weekStart);
-    d.setDate(d.getDate() - 14);
+    d.setDate(d.getDate() - 1);
     setWeekStart(d);
+  };
+
+  const goToday = () => {
+    setWeekStart(startOfDay(new Date()));
   };
 
   const goNext = () => {
     const d = new Date(weekStart);
-    d.setDate(d.getDate() + 14);
+    d.setDate(d.getDate() + 1);
     setWeekStart(d);
   };
 
   if (loading) {
     return (
       <Card>
-        <CardHeader className="flex flex-col gap-3 px-3 sm:flex-row sm:items-center sm:justify-between sm:px-6">
-          <Skeleton className="h-7 w-36" />
+        <CardHeader className="flex px-3 sm:px-6 sm:justify-end">
           <div className="flex shrink-0 gap-2">
             <Skeleton className="h-8 w-36 sm:w-40" />
             <Skeleton className="h-8 w-32 sm:w-36" />
@@ -730,8 +766,7 @@ export function WeeklyPlan({
 
   return (
     <Card>
-      <CardHeader className="flex flex-col gap-3 px-3 sm:flex-row sm:items-center sm:justify-between sm:px-6">
-        <CardTitle className="text-lg sm:text-base">2-week plan</CardTitle>
+      <CardHeader className="flex px-3 sm:px-6 sm:justify-end">
         <div className="flex shrink-0 gap-2">
           <Button
             type="button"
@@ -740,7 +775,16 @@ export function WeeklyPlan({
             onClick={goPrev}
             className="text-xs sm:text-sm"
           >
-            Previous 2 weeks
+            Previous day
+          </Button>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={goToday}
+            className="text-xs sm:text-sm"
+          >
+            Today
           </Button>
           <Button
             type="button"
@@ -749,7 +793,7 @@ export function WeeklyPlan({
             onClick={goNext}
             className="text-xs sm:text-sm"
           >
-            Next 2 weeks
+            Next day
           </Button>
         </div>
       </CardHeader>
@@ -824,7 +868,7 @@ export function WeeklyPlan({
                     className={cn(
                       "sticky left-0 z-10 shrink-0 border-r border-l-2 p-1.5 text-xs font-medium backdrop-blur-md sm:p-2 sm:text-sm",
                       isToday
-                        ? "border-l-primary bg-primary/15 font-semibold text-foreground"
+                        ? "border-l-transparent bg-primary/15 font-semibold text-foreground"
                         : "border-l-transparent bg-card/90",
                     )}
                     aria-current={isToday ? "date" : undefined}

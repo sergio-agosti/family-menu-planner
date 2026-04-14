@@ -42,7 +42,7 @@ export function RecipeDifficultyPicker({
             title={label}
             onClick={() => onChange(d)}
             className={cn(
-              "flex size-5 shrink-0 items-center justify-center rounded-full outline-none transition",
+              "flex size-[18px] shrink-0 items-center justify-center rounded-full outline-none transition",
               "focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1 focus-visible:ring-offset-background",
               disabled ? "cursor-not-allowed opacity-50" : "cursor-pointer",
               selected && "ring-1 ring-ring/70 ring-offset-0",
