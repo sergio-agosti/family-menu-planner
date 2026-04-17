@@ -26,7 +26,7 @@ The repo also contains [`public/CNAME`](public/CNAME) with the same domain, whic
 
 ## How it works
 
-Pushes to `master` run [.github/workflows/deploy-pages.yml](.github/workflows/deploy-pages.yml): `npm ci`, `npm run build` (Vite’s `base` is `/` because the site is served from the apex of the custom domain), then upload and deploy the `dist` folder.
+Pushes to `master` run [.github/workflows/deploy-pages.yml](.github/workflows/deploy-pages.yml): `pnpm install --frozen-lockfile`, `pnpm run build` (Vite’s `base` is `/` because the site is served from the apex of the custom domain), then upload and deploy the `dist` folder.
 
 ## Supabase allowed URLs
 
