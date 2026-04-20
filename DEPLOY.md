@@ -37,6 +37,6 @@ In the Supabase dashboard → **Auth → URL Configuration**:
   - `https://planner.sergioagosti.org/**`
   - `http://localhost:3000/**`
 
-The app sends users back to the current origin after Google sign-in; Supabase rejects redirects that are not listed here.
+The Pages build sets `VITE_SITE_URL=https://planner.sergioagosti.org` so the OAuth `redirect_to` is always that origin (not inferred at runtime). Supabase still rejects redirects that are not listed here — and if **Site URL** stays `http://localhost:3000`, failed matches can fall back there, so update **Site URL** to the production URL.
 
 See [SUPABASE_SETUP.md](SUPABASE_SETUP.md) step 2 for the full auth checklist.
