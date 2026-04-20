@@ -1,7 +1,12 @@
 # Supabase setup
 
 1. Create a project at [supabase.com](https://supabase.com).
-2. Enable Auth (email and/or Google). In **Authentication → URL Configuration**, set **Site URL** and add **Redirect URLs** (e.g. `http://localhost:5173`). For Google: **Providers → Google** → enable and set Client ID/Secret from [Google Cloud Console](https://console.cloud.google.com/) (OAuth 2.0 Client ID, type “Web application”; add Supabase callback URL as authorized redirect URI).
+2. Enable Auth (email and/or Google). In **Authentication → URL Configuration**:
+   - **Site URL**: use production when you deploy (`https://planner.sergioagosti.org`), or `http://localhost:3000` while only developing locally.
+   - **Redirect URLs** (add every origin the app runs on; OAuth uses the current page and must match one of these):
+     - `http://localhost:3000/**` — local dev (`pnpm dev` uses port 3000 per `vite.config`)
+     - `https://planner.sergioagosti.org/**` — production
+   For Google: **Providers → Google** → enable and set Client ID/Secret from [Google Cloud Console](https://console.cloud.google.com/) (OAuth 2.0 Client ID, type “Web application”; add **Supabase’s** callback URL as the Authorized redirect URI, not your app URL — Supabase docs show the exact value per project).
 3. In **Project Settings → API**, copy **Project URL** and **anon public** key into `.env`:
    - `VITE_SUPABASE_URL` = Project URL
    - `VITE_SUPABASE_ANON_KEY` = anon public key

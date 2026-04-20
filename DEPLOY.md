@@ -30,9 +30,13 @@ Pushes to `master` run [.github/workflows/deploy-pages.yml](.github/workflows/de
 
 ## Supabase allowed URLs
 
-In the Supabase dashboard → **Auth → URL Configuration**, add the production domain to both:
+In the Supabase dashboard → **Auth → URL Configuration**:
 
-- **Site URL**: `https://planner.sergioagosti.org`
-- **Redirect URLs**: `https://planner.sergioagosti.org/**`
+- **Site URL**: `https://planner.sergioagosti.org` (primary app URL).
+- **Redirect URLs**: include **both** production and local so OAuth works in every environment this app runs from:
+  - `https://planner.sergioagosti.org/**`
+  - `http://localhost:3000/**`
 
-Otherwise magic-link / OAuth sign-ins will fail on the deployed site.
+The app sends users back to the current origin after Google sign-in; Supabase rejects redirects that are not listed here.
+
+See [SUPABASE_SETUP.md](SUPABASE_SETUP.md) step 2 for the full auth checklist.
